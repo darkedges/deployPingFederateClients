@@ -40,6 +40,14 @@ variable "github_oidc_provider_arn" {
   type        = string
   description = "Existing GitHub Actions IAM OIDC provider ARN; leave null to create it."
   default     = null
+
+  validation {
+    condition = (
+      var.github_oidc_provider_arn == null ||
+      can(regex("^arn:aws:iam::[0-9]{12}:oidc-provider/token\\.actions\\.githubusercontent\\.com$", var.github_oidc_provider_arn))
+    )
+    error_message = "github_oidc_provider_arn must be a valid GitHub Actions IAM OIDC provider ARN."
+  }
 }
 
 variable "vault_address" {
