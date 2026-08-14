@@ -4,7 +4,8 @@ locals {
     staging     = "staging"
     production  = "production"
   }
-  tags = merge({ Service = "pingfederate-oauth2", ManagedBy = "Terraform" }, var.tags)
+  tags                   = merge({ Service = "pingfederate-oauth2", ManagedBy = "Terraform" }, var.tags)
+  github_repository_name = split("/", var.github_repository)[1]
 }
 
 data "aws_caller_identity" "current" {}
@@ -174,4 +175,23 @@ resource "vault_kv_secret_v2" "pingfederate_admin" {
   delete_all_versions = true
   data_json           = jsonencode(var.pingfederate_admin_credentials[each.value])
   depends_on          = [vault_mount.kv]
+}
+
+locals {
+  github_actions_variables = {
+    OAUTH2_AWS_REGION          = var.aws_region
+    OAUTH2_TF_STATE_BUCKET     = aws_s3_bucket.terraform.id
+    OAUTH2_TF_STATE_KMS_KEY_ID = aws_kms_key.terraform.arn
+    OAUTH2_AWS_ROLE_ARNS       = jsonencode({ for key, role in aws_iam_role.github : key => role.arn })
+    OAUTH2_VAULT_ADDR          = var.vault_address
+    OAUTH2_VAULT_ROLES         = jsonencode({ for key, role in vault_jwt_auth_backend_role.github : key => role.role_name })
+    OAUTH2_PF_HOSTS            = jsonencode(var.pingfederate_hosts)
+  }
+}
+
+resource "github_actions_variable" "oauth2" {
+  for_each      = local.github_actions_variables
+  repository    = local.github_repository_name
+  variable_name = each.key
+  value         = each.value
 }

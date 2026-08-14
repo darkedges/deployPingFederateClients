@@ -162,8 +162,8 @@ team-membership read access.
 
 ## Runner and secret requirements
 
-Deployment workflows use a self-hosted Linux runner carrying the
-`pingfederate` label. It must:
+All workflows use the Actions Runner Controller scale set named
+`arc-runner-set`. Its runner image must:
 
 - Reach the PingFederate Admin API and Vault over trusted TLS.
 - Provide `aws`, `curl`, `jq`, `python3`, `terraform`, and `vault`.

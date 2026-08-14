@@ -45,10 +45,10 @@ cleanup() {
 }
 trap cleanup EXIT
 
-admin_path="kv/pingfederate/${environment}/terraform-admin"
+admin_path="pingfederate/${environment}/terraform-admin"
 export PINGFEDERATE_PROVIDER_USERNAME PINGFEDERATE_PROVIDER_PASSWORD
-PINGFEDERATE_PROVIDER_USERNAME="$(vault kv get -field=username "$admin_path")"
-PINGFEDERATE_PROVIDER_PASSWORD="$(vault kv get -field=password "$admin_path")"
+PINGFEDERATE_PROVIDER_USERNAME="$(vault read -format=json "kv/data/$admin_path" | jq -er .data.data.username)"
+PINGFEDERATE_PROVIDER_PASSWORD="$(vault read -format=json "kv/data/$admin_path" | jq -er .data.data.password)"
 export PINGFEDERATE_PROVIDER_HTTPS_HOST="$PF_HTTPS_HOST"
 export PINGFEDERATE_PROVIDER_PRODUCT_VERSION=12.3
 export PINGFEDERATE_TF_APPEND_USER_AGENT="GitHubActions/${GITHUB_RUN_ID}"
@@ -64,8 +64,8 @@ elif [[ -z "$config_file" || "$config_file" == "platform" ]]; then
   stack="terraform/stacks/platform"
   state_key="pingfederate/${environment}/platform.tfstate"
   config_file="oauth2/platform/oauth2_platform.yaml"
-  secrets_path="kv/pingfederate/${environment}/platform-secrets"
-  if vault kv get -format=json "$secrets_path" >/tmp/platform-secrets.json 2>/dev/null; then
+  secrets_path="pingfederate/${environment}/platform-secrets"
+  if vault read -format=json "kv/data/$secrets_path" >/tmp/platform-secrets.json 2>/dev/null; then
     export TF_VAR_platform_secrets
     TF_VAR_platform_secrets="$(jq -c .data.data /tmp/platform-secrets.json)"
     rm -f /tmp/platform-secrets.json
@@ -79,7 +79,7 @@ else
   state_key="pingfederate/${environment}/applications/${organisation}/${application}.tfstate"
   if [[ "$(jq -er .spec.authentication.method <<<"$rendered")" == "client_secret" ]]; then
     export TF_VAR_client_secret
-    TF_VAR_client_secret="$(vault kv get -field=client_secret "kv/oauth2/${environment}/${organisation}/${application}")"
+    TF_VAR_client_secret="$(vault read -format=json "kv/data/oauth2/${environment}/${organisation}/${application}" | jq -er .data.data.client_secret)"
   fi
   terraform_args=(
     -var="environment=$environment"

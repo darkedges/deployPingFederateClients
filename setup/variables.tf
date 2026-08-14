@@ -18,6 +18,18 @@ variable "github_repository" {
   }
 }
 
+variable "pingfederate_hosts" {
+  type        = map(string)
+  description = "PingFederate Admin API hostname for each deployment environment, without a URL scheme."
+  validation {
+    condition = (
+      toset(keys(var.pingfederate_hosts)) == toset(["development", "staging", "production"]) &&
+      alltrue([for host in values(var.pingfederate_hosts) : can(regex("^[A-Za-z0-9.-]+(?::[0-9]{1,5})?$", host))])
+    )
+    error_message = "pingfederate_hosts must contain development, staging, and production hostnames without https:// or paths."
+  }
+}
+
 variable "github_oidc_provider_arn" {
   type        = string
   description = "Existing GitHub Actions IAM OIDC provider ARN; leave null to create it."

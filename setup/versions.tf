@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/vault"
       version = "= 5.6.0"
     }
+    github = {
+      source  = "integrations/github"
+      version = "= 6.13.0"
+    }
   }
 }
 
@@ -19,4 +23,8 @@ provider "aws" {
 
 provider "vault" {
   address = var.vault_address
+}
+
+provider "github" {
+  owner = split("/", var.github_repository)[0]
 }

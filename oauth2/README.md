@@ -48,8 +48,8 @@ Required repository variables:
 Store the App private key as `OAUTH2_REVIEW_APP_PRIVATE_KEY`. The App needs
 pull-request read and organisation team-membership read permissions.
 
-The self-hosted runner group must carry `linux` and `pingfederate` labels,
-reach the Admin API privately, trust its CA, and provide `aws`, `curl`, `jq`,
+The Actions Runner Controller scale set must be named `arc-runner-set`, reach
+the Admin API privately, trust its CA, and provide `aws`, `curl`, `jq`,
 `python3`, `terraform`, and `vault`. Vault stores the dedicated PingFederate
 account at `kv/pingfederate/<environment>/terraform-admin` using `username`
 and `password` keys.

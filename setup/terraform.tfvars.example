@@ -3,6 +3,12 @@ bucket_name       = "replace-with-globally-unique-pingfederate-state-bucket"
 github_repository = "your-org/pingfeddeploy"
 vault_address     = "https://vault.example.com"
 
+pingfederate_hosts = {
+  development = "pingfederate-dev.internal.example.com"
+  staging     = "pingfederate-staging.internal.example.com"
+  production  = "pingfederate.internal.example.com"
+}
+
 # Set this when the AWS account already has the GitHub Actions OIDC provider.
 # github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
 

@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   scaffold:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-set
     timeout-minutes: 10
     steps:
       - name: Checkout develop

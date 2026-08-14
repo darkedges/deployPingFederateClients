@@ -23,7 +23,7 @@ permissions:
 jobs:
   import:
     environment: ${{ inputs.environment }}
-    runs-on: [self-hosted, linux, pingfederate]
+    runs-on: arc-runner-set
     timeout-minutes: 30
     env:
       TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}

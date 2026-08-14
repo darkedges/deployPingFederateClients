@@ -10,6 +10,8 @@ unsealed Vault cluster. It does not deploy a Vault server or PingFederate.
 - AWS credentials permitted to manage S3, KMS, IAM roles, and an OIDC provider
 - `VAULT_ADDR` and a `VAULT_TOKEN` allowed to manage auth methods, policies,
   mounts (when enabled), and bootstrap secrets
+- GitHub CLI authentication from `gh auth login`, or a `GITHUB_TOKEN` with
+  repository Actions-variable write access
 - An existing private Vault endpoint reachable by the deployment runners
 
 Copy `terraform.tfvars.example` to a file outside version control, fill in the
@@ -25,17 +27,20 @@ terraform -chdir=setup output -json github_repository_variables
 Initially use local state or a separately secured bootstrap backend. After the
 bucket exists, migrate this root to a protected remote backend if desired.
 
-The output supplies all generated GitHub variables except `OAUTH2_PF_HOSTS`,
-which must be set to the private PingFederate Admin API hosts, and the review
-GitHub App settings. Administrator credentials should normally be written
+Terraform uses the GitHub provider to create all generated non-secret Actions
+variables, including `OAUTH2_PF_HOSTS`. Authenticate with `gh auth login` or
+set `GITHUB_TOKEN` before planning. The review GitHub App ID and private key
+remain separate because they belong to the approval integration.
+
+Administrator credentials should normally be written
 directly with `vault kv put`; the sensitive Terraform variable is provided only
 for controlled initial bootstrapping because its values are retained in setup
 state.
 
 ```bash
-vault kv put kv/pingfederate/development/terraform-admin username=terraform password='...'
-vault kv put kv/pingfederate/staging/terraform-admin username=terraform password='...'
-vault kv put kv/pingfederate/production/terraform-admin username=terraform password='...'
+vault write kv/data/pingfederate/development/terraform-admin data='{"username":"terraform","password":"..."}'
+vault write kv/data/pingfederate/staging/terraform-admin data='{"username":"terraform","password":"..."}'
+vault write kv/data/pingfederate/production/terraform-admin data='{"username":"terraform","password":"..."}'
 ```
 
 If a GitHub OIDC provider already exists in the AWS account, pass its ARN to

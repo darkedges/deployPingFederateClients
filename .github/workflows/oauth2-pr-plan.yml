@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   plan:
-    runs-on: [self-hosted, linux, pingfederate]
+    runs-on: arc-runner-set
     timeout-minutes: 60
     steps:
       - name: Require protected workflow source
