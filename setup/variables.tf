@@ -39,6 +39,12 @@ variable "vault_jwt_path" {
   default     = "jwt"
 }
 
+variable "manage_vault_jwt_backend" {
+  type        = bool
+  description = "Create and configure the Vault JWT auth backend. Leave false when the path already exists."
+  default     = false
+}
+
 variable "manage_kv_mount" {
   type        = bool
   description = "Create the kv-v2 mount. Set false when kv already exists."

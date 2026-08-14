@@ -6,6 +6,9 @@ vault_address     = "https://vault.example.com"
 # Set this when the AWS account already has the GitHub Actions OIDC provider.
 # github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
 
+# Set true only when the jwt auth path does not already exist in Vault.
+manage_vault_jwt_backend = false
+
 # Set true only when this Terraform configuration should create Vault's kv mount.
 manage_kv_mount = false
 

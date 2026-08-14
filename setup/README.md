@@ -6,7 +6,7 @@ unsealed Vault cluster. It does not deploy a Vault server or PingFederate.
 
 ## Prerequisites
 
-- Terraform 1.15.8
+- Terraform 1.9.8 or later in the 1.x series
 - AWS credentials permitted to manage S3, KMS, IAM roles, and an OIDC provider
 - `VAULT_ADDR` and a `VAULT_TOKEN` allowed to manage auth methods, policies,
   mounts (when enabled), and bootstrap secrets
@@ -40,4 +40,18 @@ vault kv put kv/pingfederate/production/terraform-admin username=terraform passw
 
 If a GitHub OIDC provider already exists in the AWS account, pass its ARN to
 `github_oidc_provider_arn`; AWS permits only one provider for a given URL in an
-account. Set `manage_kv_mount=true` only when the `kv` mount does not exist.
+account. Leave `manage_vault_jwt_backend=false` when Vault already has an auth
+method at `jwt/`; the existing backend must trust GitHub's issuer and discovery
+endpoint. Set it true only when this setup should create that backend. Set
+`manage_kv_mount=true` only when the `kv` mount does not exist.
+
+Discover the existing AWS provider ARN with:
+
+```bash
+account_id="$(aws sts get-caller-identity --query Account --output text)"
+echo "arn:aws:iam::${account_id}:oidc-provider/token.actions.githubusercontent.com"
+```
+
+If a failed first apply already created some resources, keep the generated
+Terraform state and rerun `plan` after setting these reuse variables. Terraform
+will continue from the successfully recorded resources.

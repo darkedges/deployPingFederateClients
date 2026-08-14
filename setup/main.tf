@@ -126,6 +126,7 @@ resource "aws_iam_role_policy" "github" {
 }
 
 resource "vault_jwt_auth_backend" "github" {
+  count              = var.manage_vault_jwt_backend ? 1 : 0
   path               = var.vault_jwt_path
   oidc_discovery_url = "https://token.actions.githubusercontent.com"
   bound_issuer       = "https://token.actions.githubusercontent.com"
@@ -149,7 +150,7 @@ resource "vault_policy" "github" {
 
 resource "vault_jwt_auth_backend_role" "github" {
   for_each                = local.environments
-  backend                 = vault_jwt_auth_backend.github.path
+  backend                 = var.vault_jwt_path
   role_name               = "pingfederate-oauth2-${each.key}"
   role_type               = "jwt"
   bound_audiences         = ["vault"]
@@ -163,6 +164,7 @@ resource "vault_jwt_auth_backend_role" "github" {
     repository = var.github_repository
     ref        = "refs/heads/${each.value}"
   }
+  depends_on = [vault_jwt_auth_backend.github]
 }
 
 resource "vault_kv_secret_v2" "pingfederate_admin" {
