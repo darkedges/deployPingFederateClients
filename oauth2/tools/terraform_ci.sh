@@ -41,9 +41,16 @@ VAULT_TOKEN="$(vault write -field=token auth/jwt/login role="$VAULT_ROLE" jwt="$
 unset vault_oidc
 cleanup() {
   rm -f "${plan_file:-}" "${checksum_file:-}" /tmp/platform-secrets.json /tmp/retirement.json
+  rm -rf "${pf_ca_dir:-}"
   vault token revoke -self >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
+
+pf_ca_dir="$(mktemp -d)"
+vault read -field=certificate darkedges_idam_root/cert/ca >"$pf_ca_dir/root.pem"
+vault read -field=certificate darkedges_idam_intermediate/cert/ca >"$pf_ca_dir/intermediate.pem"
+chmod 0600 "$pf_ca_dir/root.pem" "$pf_ca_dir/intermediate.pem"
+export PINGFEDERATE_PROVIDER_CA_CERTIFICATE_PEM_FILES="$pf_ca_dir/root.pem,$pf_ca_dir/intermediate.pem"
 
 admin_path="pingfederate/${environment}/terraform-admin"
 export PINGFEDERATE_PROVIDER_USERNAME PINGFEDERATE_PROVIDER_PASSWORD

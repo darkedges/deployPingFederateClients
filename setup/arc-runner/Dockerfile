@@ -15,6 +15,7 @@ RUN apt-get update \
       ca-certificates \
       coreutils \
       curl \
+      gh \
       git \
       jq \
       openssh-client \
@@ -23,6 +24,15 @@ RUN apt-get update \
       python3-venv \
       unzip \
     && rm -rf /var/lib/apt/lists/*
+
+COPY oauth2/tools/requirements.txt /tmp/pingfeddeploy-requirements.txt
+
+RUN python3 -m venv /opt/pingfeddeploy-python \
+    && /opt/pingfeddeploy-python/bin/python -m pip install --disable-pip-version-check --no-cache-dir \
+      --requirement /tmp/pingfeddeploy-requirements.txt \
+    && rm -f /tmp/pingfeddeploy-requirements.txt
+
+ENV PATH="/opt/pingfeddeploy-python/bin:${PATH}"
 
 RUN machine_arch="$(dpkg --print-architecture)" \
     && case "$machine_arch" in \
@@ -56,6 +66,8 @@ RUN terraform version \
     && aws --version \
     && python3 --version \
     && python3 -m pip --version \
+    && python3 -c "import jsonschema, yaml" \
+    && gh --version \
     && jq --version \
     && git --version
 

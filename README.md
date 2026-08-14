@@ -118,6 +118,8 @@ platform references. OAuth profiles constrain grants and authentication:
 - Browser and native clients require PKCE.
 - Implicit and resource-owner-password grants cannot be configured.
 - Confidential client secrets are read from Vault.
+- PingFederate root and intermediate CA certificates are retrieved from Vault
+  PKI and trusted explicitly for each deployment job.
 - Pull requests require approvals from the application owner and a different
   identity-platform team member at the current commit.
 - GitHub Actions dependencies are pinned to commit SHAs.

@@ -34,8 +34,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: develop
-      - name: Install parser
-        run: python3 -m pip install --disable-pip-version-check -r oauth2/tools/requirements.txt
       - name: Generate disabled client definition
         env:
           ORGANISATION: ${{ inputs.organisation }}
@@ -43,7 +41,11 @@ jobs:
           DISPLAY_NAME: ${{ inputs.display_name }}
           PROFILE: ${{ inputs.profile }}
         run: |
-          python3 oauth2/tools/oauth2_config.py scaffold +            --organisation "$ORGANISATION" +            --application "$APPLICATION" +            --profile "$PROFILE" +            --name "$DISPLAY_NAME"
+          python3 oauth2/tools/oauth2_config.py scaffold \
+            --organisation "$ORGANISATION" \
+            --application "$APPLICATION" \
+            --profile "$PROFILE" \
+            --name "$DISPLAY_NAME"
           python3 oauth2/tools/oauth2_config.py codeowners
       - name: Open draft pull request
         env:
@@ -58,4 +60,6 @@ jobs:
           git add oauth2/applications .github/CODEOWNERS
           git commit -m "Scaffold OAuth2 client ${ORGANISATION}/${APPLICATION}"
           git push origin "$branch"
-          gh pr create --draft --base develop --head "$branch" +            --title "OAuth2 client: ${ORGANISATION}/${APPLICATION}" +            --body "Generated in a disabled state. Complete all environment values and obtain application-owner plus identity-platform approval."
+          gh pr create --draft --base develop --head "$branch" \
+            --title "OAuth2 client: ${ORGANISATION}/${APPLICATION}" \
+            --body "Generated in a disabled state. Complete all environment values and obtain application-owner plus identity-platform approval."

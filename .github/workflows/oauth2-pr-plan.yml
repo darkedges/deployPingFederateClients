@@ -31,8 +31,6 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           persist-credentials: false
-      - name: Install pinned validators
-        run: python3 -m pip install --disable-pip-version-check -r oauth2/tools/requirements.txt
       - name: Verify approvals
         env:
           GH_APP_TOKEN: ${{ steps.app-token.outputs.token }}

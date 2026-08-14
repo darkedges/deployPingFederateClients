@@ -28,8 +28,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           persist-credentials: false
-      - name: Install parser
-        run: python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
       - name: Verify current-commit team approvals
         env:
           GH_APP_TOKEN: ${{ steps.app-token.outputs.token }}

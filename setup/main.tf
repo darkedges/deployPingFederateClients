@@ -146,6 +146,8 @@ resource "vault_policy" "github" {
   policy   = <<-EOT
     path "kv/data/pingfederate/${each.key}/*" { capabilities = ["read"] }
     path "kv/data/oauth2/${each.key}/*" { capabilities = ["read"] }
+    path "darkedges_idam_root/cert/ca" { capabilities = ["read"] }
+    path "darkedges_idam_intermediate/cert/ca" { capabilities = ["read"] }
   EOT
 }
 

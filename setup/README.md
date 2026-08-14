@@ -32,6 +32,13 @@ variables, including `OAUTH2_PF_HOSTS`. Authenticate with `gh auth login` or
 set `GITHUB_TOKEN` before planning. The review GitHub App ID and private key
 remain separate because they belong to the approval integration.
 
+The workflow policies include read-only access to the public CA endpoints
+`darkedges_idam_root/cert/ca` and
+`darkedges_idam_intermediate/cert/ca`. Jobs download those certificates to an
+ephemeral directory and configure the PingFederate provider to trust them.
+Keep `pingfederate_insecure_trust_all_tls=false` when these PKI mounts contain
+the issuer chain used by PingFederate.
+
 Administrator credentials should normally be written
 directly with `vault kv put`; the sensitive Terraform variable is provided only
 for controlled initial bootstrapping because its values are retained in setup

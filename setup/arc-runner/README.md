@@ -6,15 +6,18 @@ by the PingFederate workflows:
 - AWS CLI v2
 - Terraform
 - Vault CLI
-- Python 3, pip, and venv
+- Python 3 and a dedicated virtual environment containing the repository's
+  pinned PyYAML and JSON Schema dependencies
+- GitHub CLI
 - Bash, Git, curl, jq, OpenSSH, CA certificates, unzip, and checksum utilities
 
 Build and push an immutable image tag:
 
 ```bash
 docker build --pull \
+  --file setup/arc-runner/Dockerfile \
   --tag darkedges/pingfeddeploy-arc-runner:test \
-  setup/arc-runner
+  .
 
 docker push darkedges/pingfeddeploy-arc-runner:test
 ```
@@ -23,11 +26,12 @@ Override tool versions with build arguments when required:
 
 ```bash
 docker build \
+  --file setup/arc-runner/Dockerfile \
   --build-arg TERRAFORM_VERSION=1.15.8 \
   --build-arg VAULT_VERSION=2.0.3 \
   --build-arg AWSCLI_VERSION=2.31.22 \
   --tag darkedges/pingfeddeploy-arc-runner:test \
-  setup/arc-runner
+  .
 ```
 
 Copy `values.example.yaml`, replace the image reference with the pushed
