@@ -20,6 +20,8 @@ build/
 *.tfstate.*
 *.tfplan
 crash.log
+*.tfvars
+!*.tfvars.example
 
 # Env and secrets
 .env

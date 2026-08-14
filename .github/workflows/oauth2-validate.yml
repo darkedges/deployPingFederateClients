@@ -5,6 +5,7 @@ on:
     paths:
       - "oauth2/**"
       - "terraform/**"
+      - "setup/**"
       - ".github/CODEOWNERS"
       - ".github/workflows/oauth2-*.yml"
   push:
@@ -12,6 +13,7 @@ on:
     paths:
       - "oauth2/**"
       - "terraform/**"
+      - "setup/**"
       - ".github/CODEOWNERS"
       - ".github/workflows/oauth2-*.yml"
 
@@ -46,7 +48,7 @@ jobs:
           terraform_version: 1.15.8
           terraform_wrapper: false
       - name: Terraform formatting
-        run: terraform fmt -check -recursive terraform
+        run: terraform fmt -check -recursive .
       - name: Terraform validation
         run: |
           terraform -chdir=terraform/stacks/platform init -backend=false
@@ -55,6 +57,8 @@ jobs:
           terraform -chdir=terraform/stacks/application validate
           terraform -chdir=terraform/stacks/application-destroy init -backend=false
           terraform -chdir=terraform/stacks/application-destroy validate
+          terraform -chdir=setup init -backend=false
+          terraform -chdir=setup validate
       - name: Mocked Terraform plan tests
         run: |
           terraform -chdir=terraform/stacks/platform test

@@ -4,4 +4,5 @@
 /oauth2/tools/ @darkedges/identity-platform
 /oauth2/ownership.yaml @darkedges/identity-platform
 /terraform/ @darkedges/identity-platform
+/setup/ @darkedges/identity-platform
 /.github/workflows/oauth2-*.yml @darkedges/identity-platform

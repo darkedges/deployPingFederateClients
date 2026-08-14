@@ -223,6 +223,7 @@ def codeowners_content() -> str:
         f"/oauth2/tools/ {identity}",
         f"/oauth2/ownership.yaml {identity}",
         f"/terraform/ {identity}",
+        f"/setup/ {identity}",
         f"/.github/workflows/oauth2-*.yml {identity}",
     ]
     for key, record in sorted(ownership.get("applications", {}).items()):

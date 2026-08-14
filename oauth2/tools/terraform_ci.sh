@@ -17,11 +17,18 @@ done
 
 oidc_token() {
   local audience="$1"
-  curl --fail --silent --show-error +    --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" +    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}" | jq -er .value
+  curl --fail --silent --show-error \
+    --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+    "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}" | jq -er .value
 }
 
 aws_oidc="$(oidc_token sts.amazonaws.com)"
-credentials="$(aws sts assume-role-with-web-identity +  --role-arn "$AWS_ROLE_ARN" +  --role-session-name "oauth2-${GITHUB_RUN_ID}" +  --web-identity-token "$aws_oidc" +  --duration-seconds 3600 +  --query Credentials --output json)"
+credentials="$(aws sts assume-role-with-web-identity \
+  --role-arn "$AWS_ROLE_ARN" \
+  --role-session-name "oauth2-${GITHUB_RUN_ID}" \
+  --web-identity-token "$aws_oidc" \
+  --duration-seconds 3600 \
+  --query Credentials --output json)"
 export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
 AWS_ACCESS_KEY_ID="$(jq -er .AccessKeyId <<<"$credentials")"
 AWS_SECRET_ACCESS_KEY="$(jq -er .SecretAccessKey <<<"$credentials")"

@@ -1,219 +1,211 @@
-# Ping → Entra Identity Broker Platform
+# PingFederate OAuth2 Deployment
 
-<p align="center">
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/policy-validation.yml/badge.svg" />
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/kustomize-validation.yml/badge.svg" />
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/checksum-verification.yml/badge.svg" />
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/build-and-sign.yml/badge.svg" />
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/security-scan.yml/badge.svg" />
-  <img src="https://github.com/darkedges/ping-entra-broker/actions/workflows/promotion-gate.yml/badge.svg" />
-</p>
+Declarative, reviewed deployment of PingFederate OAuth2 clients and shared
+OAuth platform configuration using YAML, Terraform, and GitHub Actions.
 
-## Architecture Overview
+Application teams define one file named
+`oauth2_<organisation>_<application>.yaml`. The service validates that file,
+enforces ownership and approval rules, creates a Terraform plan, and deploys
+the configuration through protected environments.
+
+## What this repository manages
+
+- OAuth2 clients and environment-specific redirect URIs
+- Access token managers and access token mappings
+- OpenID Connect policies
+- Token exchange processor policies and generator mappings
+- Application ownership and CODEOWNERS rules
+- Per-application Terraform state, planning, deployment, import, rotation,
+  retirement, and drift detection
+
+Token processors and generators are referenced through an allowlisted
+platform catalog rather than created by application configuration.
+
+## Repository layout
+
+| Path | Purpose |
+| --- | --- |
+| `oauth2/applications/` | Deployable application definitions |
+| `oauth2/platform/` | Identity-owned shared PingFederate catalog |
+| `oauth2/schemas/` | JSON Schemas for editor and CI validation |
+| `oauth2/examples/` | Non-deployable client examples |
+| `oauth2/ownership.yaml` | Application and identity team ownership |
+| `oauth2/tools/` | Validation, rendering, review, and CI tooling |
+| `terraform/modules/` | PingFederate application and platform modules |
+| `terraform/stacks/` | Independently stateful Terraform roots |
+| `.github/workflows/` | Validation and deployment automation |
+| `setup/` | AWS and Vault bootstrap Terraform |
+
+## Quick start
+
+Install the pinned Python dependencies:
+
+```bash
+python -m pip install -r oauth2/tools/requirements.txt
+```
+
+Register the application owner in `oauth2/ownership.yaml`:
+
+```yaml
+identityPlatformTeam: your-org/identity-platform
+applications:
+  example/example-app:
+    githubTeam: your-org/example-app-owners
+```
+
+Generate a disabled client definition:
+
+```bash
+python oauth2/tools/oauth2_config.py scaffold \
+  --organisation example \
+  --application example-app \
+  --profile confidential_web \
+  --name "Example application"
+```
+
+The generated path is:
+
+```text
+oauth2/applications/oauth2_example_example-app.yaml
+```
+
+Complete its environment settings, then validate the repository and update
+CODEOWNERS:
+
+```bash
+python oauth2/tools/oauth2_config.py validate
+python oauth2/tools/oauth2_config.py codeowners
+```
+
+Commit both the application file and generated `.github/CODEOWNERS` change.
+
+See [`oauth2/examples/oauth2_example_example-app.yaml`](oauth2/examples/oauth2_example_example-app.yaml)
+for a complete non-deployable example and [`oauth2/README.md`](oauth2/README.md)
+for the detailed author and operator guide.
+
+## Deployment flow
 
 ```mermaid
-flowchart TB
-  subgraph GIT["Git Repositories"]
-    POL["ping-entra-broker-policies.git"]
-    INFRA["ping-entra-broker.git"]
-  end
-
-  subgraph DEV["Dev Cluster"]
-    D_BROKER["Broker"]
-    D_OPA["OPA"]
-    D_SYNC["git-sync"]
-    D_VAULT["Vault Agent"]
-    D_GRAF["Grafana"]
-  end
-
-  POL --> D_SYNC
-  INFRA --> D_BROKER
-  D_BROKER --> D_OPA
-  D_BROKER --> D_GRAF
+flowchart LR
+  A[Application YAML] --> V[Schema and security validation]
+  V --> R[Application owner approval]
+  R --> I[Identity platform approval]
+  I --> P[Terraform plan]
+  P --> G[GitHub environment gate]
+  G --> F[PingFederate apply]
 ```
 
-## PingFederate OAuth2 configuration as code
+Branches map to environments as follows:
 
-OAuth2 clients and shared PingFederate policies can be deployed from reviewed
-YAML through Terraform and protected GitHub Actions. The service includes JSON
-Schema validation, secure client profiles, deterministic ownership, dual-team
-approvals, per-application state, Vault secret references, environment
-promotion, drift detection, imports, rotation, and a 24-hour
-disable-before-destroy gate.
+| Branch | Environment |
+| --- | --- |
+| `develop` | `development` |
+| `staging` | `staging` |
+| `production` | `production` |
 
-See [oauth2/README.md](oauth2/README.md) for authoring and operator setup.
+Promotion is restricted to `develop` → `staging` → `production`. Shared
+platform configuration is applied before affected applications. Each
+application has isolated state and application deployments are concurrency
+limited.
 
-## Deploying Argo CD via Helm
+## Security controls
 
-Prereqs: `helm` installed and kube context set to the target cluster.
+The configuration contract rejects duplicate YAML keys, unknown properties,
+inline secrets, insecure or wildcard redirects, unknown scopes, and invalid
+platform references. OAuth profiles constrain grants and authentication:
+
+- Browser and native clients require PKCE.
+- Implicit and resource-owner-password grants cannot be configured.
+- Confidential client secrets are read from Vault.
+- Pull requests require approvals from the application owner and a different
+  identity-platform team member at the current commit.
+- GitHub Actions dependencies are pinned to commit SHAs.
+- AWS and Vault authentication use GitHub OIDC rather than stored cloud
+  credentials.
+- Terraform state and saved plans use private, versioned, SSE-KMS encrypted
+  S3 storage.
+- Saved plans are protected by SHA-256 checksums.
+- A client must be deployed as disabled for at least 24 hours before removal.
+- Scheduled drift detection plans changes but never applies them.
+
+## Repository configuration
+
+Provision the shared AWS and Vault prerequisites first. See
+[`setup/README.md`](setup/README.md) for the bootstrap procedure and generated
+GitHub variable values.
+
+Create protected `develop`, `staging`, and `production` branches and GitHub
+Environments for `development`, `staging`, and `production`. Configure
+required reviewers for sensitive environments.
+
+Required repository variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `OAUTH2_AWS_REGION` | Terraform state bucket region |
+| `OAUTH2_TF_STATE_BUCKET` | Private, versioned state and plan bucket |
+| `OAUTH2_TF_STATE_KMS_KEY_ID` | Customer-managed KMS key ARN |
+| `OAUTH2_AWS_ROLE_ARNS` | JSON environment-to-AWS-role mapping |
+| `OAUTH2_VAULT_ADDR` | Internal Vault HTTPS address |
+| `OAUTH2_VAULT_ROLES` | JSON environment-to-Vault-role mapping |
+| `OAUTH2_PF_HOSTS` | JSON environment-to-PingFederate-host mapping |
+| `OAUTH2_REVIEW_APP_ID` | Least-privilege GitHub App ID |
+
+Required repository secret:
+
+| Secret | Purpose |
+| --- | --- |
+| `OAUTH2_REVIEW_APP_PRIVATE_KEY` | GitHub App private key for approval checks |
+
+The GitHub App requires pull-request read access and organisation
+team-membership read access.
+
+## Runner and secret requirements
+
+Deployment workflows use a self-hosted Linux runner carrying the
+`pingfederate` label. It must:
+
+- Reach the PingFederate Admin API and Vault over trusted TLS.
+- Provide `aws`, `curl`, `jq`, `python3`, `terraform`, and `vault`.
+- Use repository-, branch-, and environment-restricted AWS and Vault OIDC
+  roles.
+
+Store the dedicated PingFederate Terraform administrator credentials at:
+
+```text
+kv/pingfederate/<environment>/terraform-admin
+```
+
+using `username` and `password` keys. Confidential application secrets use:
+
+```text
+kv/oauth2/<environment>/<organisation>/<application>#client_secret
+```
+
+## Workflows
+
+| Workflow | Purpose |
+| --- | --- |
+| `oauth2-validate` | Schema, semantic, ownership, Python, and Terraform checks |
+| `oauth2-review-gate` | Dual-team, current-commit approval enforcement |
+| `oauth2-pr-plan` | Trusted Terraform plan for an approved pull request |
+| `oauth2-deploy` | Branch-driven platform and application deployment |
+| `oauth2-promotion-check` | Branch promotion policy |
+| `oauth2-scaffold` | Generate a correctly named disabled client file |
+| `oauth2-drift` | Scheduled non-applying drift detection |
+| `oauth2-import` | Controlled adoption of an existing OAuth client |
+| `oauth2-rotate` | Apply a client secret rotation after Vault is updated |
+
+## Local verification
 
 ```bash
-# Add repo and update indices
-helm repo add argo https://argoproj.github.io/argo-helm
-helm repo update
-
-# Create namespace
-kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-
-# Install/upgrade Argo CD with ingress + OIDC (edit values first)
-helm upgrade --install argocd argo/argo-cd \
-  --namespace argocd \
-  -f deploy/argocd/values.yaml
-
-# (Optional) wait for controller and server
-kubectl rollout status deploy/argocd-server -n argocd
-kubectl rollout status deploy/argocd-repo-server -n argocd
-
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+python oauth2/tools/oauth2_config.py validate
+python oauth2/tools/oauth2_config.py codeowners --check
+python -m unittest discover -s oauth2/tests -v
+terraform fmt -check -recursive terraform
+bash -n oauth2/tools/terraform_ci.sh
 ```
 
-After install, fetch the initial admin password:
-
-```bash
-kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.password}" | base64 -d; echo
-```
-
-Argo CD ingress/OIDC configuration lives in [deploy/argocd/values.yaml](deploy/argocd/values.yaml#L1-L25). Update the OIDC issuer/client values and ensure DNS `argocd.darkedges.au` points to the Kong LoadBalancer. TLS is issued via cert-manager using the `letsencrypt-prod` ClusterIssuer.
-
-## Deploy the Full Stack (Broker + OPA/Vault + Grafana/Prometheus)
-
-1) Bootstrap Argo CD (see section above) and add repo access if private.
-2) Apply the Argo CD Applications for your environment:
-
-```bash
-# choose one env (dev|stage|prod)
-kubectl apply -f deploy/argocd-broker-dev.yaml -n argocd
-kubectl apply -f deploy/argocd-grafana.yaml -n argocd
-kubectl apply -f deploy/argocd-prometheus.yaml -n argocd
-kubectl apply -f deploy/argocd-vault.yaml -n argocd
-```
-
-1) Let Argo CD sync; it will deploy:
-
-- Broker workload plus sidecars and configs (includes OPA sidecar and Vault Agent templates) from [deploy/broker/overlays/*](deploy/broker/overlays/dev/kustomization.yaml).
-- Prometheus via Argo CD Helm app [deploy/argocd-prometheus.yaml](deploy/argocd-prometheus.yaml) (kube-prometheus-stack).
-  - Node exporter hostRootFsMount is disabled to avoid mountPropagation issues on this runtime. Enable if your cluster supports host rootfs mounts.
-- Grafana (single shared instance) from [deploy/argocd-grafana.yaml](deploy/argocd-grafana.yaml).
-  - Ingress: grafana.darkedges.au via Kong with TLS (letsencrypt-prod). OIDC placeholders in [deploy/grafana/base/values.yaml](deploy/grafana/base/values.yaml#L17-L44) must be set (issuer/client id/secret). Create the secret [deploy/grafana/base/secret-grafana-oidc.yaml](deploy/grafana/base/secret-grafana-oidc.yaml) with the client secret before syncing.
-  - Prometheus datasource is preconfigured to `kube-prometheus-stack-prometheus.observability.svc:9090`. Adjust if your Prometheus service differs.
-- Create secret [deploy/grafana/base/secret-grafana-oidc.yaml](deploy/grafana/base/secret-grafana-oidc.yaml) with `GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET` before syncing Grafana (chart blocks inline secrets).
-- Vault via Helm chart managed by Argo CD with ingress `vault.darkedges.au` from [deploy/argocd-vault.yaml](deploy/argocd-vault.yaml).
-
-1) Prometheus (option if not already present):
-
-```bash
-helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-helm repo update
-kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
-helm upgrade --install kube-prometheus prometheus-community/kube-prometheus-stack \
-  --namespace observability \
-  --version 65.2.0
-```
-
-1) Validate rollouts:
-
-```bash
-kubectl get pods -n ping-entra-dev
-kubectl get pods -n observability-dev
-```
-
-1) Access Grafana:
-
-```bash
-kubectl port-forward svc/broker-grafana -n observability-dev 3000:80
-```
-
-Notes:
-
-- Adjust env (dev/stage/prod) and namespaces accordingly.
-- Git-sync now pulls policies from <https://github.com/darkedges/ping-entra-broker-policies.git> using dev/stage/prod branches.
-- Update `repoURL`/`targetRevision` in Argo CD Application manifests if your remote/branch differs.
-
-## Ingress with Kong, cert-manager, and Let's Encrypt
-
-Install cert-manager (for ACME certificates):
-
-```bash
-kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-helm upgrade --install cert-manager jetstack/cert-manager \
-  --namespace cert-manager \
-  --version v1.14.4 \
-  --set installCRDs=true
-```
-
-Configure a ClusterIssuer for Let's Encrypt (HTTP-01 via Kong):
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    email: you@example.com
-    server: https://acme-v02.api.letsencrypt.org/directory
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    solvers:
-      - http01:
-          ingress:
-            class: kong
-```
-
-Apply the issuer:
-
-```bash
-kubectl apply -f clusterissuer-letsencrypt-prod.yaml
-```
-
-Install Kong Ingress Controller:
-
-```bash
-kubectl create namespace kong --dry-run=client -o yaml | kubectl apply -f -
-helm repo add kong https://charts.konghq.com
-helm repo update
-helm upgrade --install kong kong/ingress \
-  --namespace kong \
-  --set ingressController.installCRDs=true \
-  --set proxy.type=LoadBalancer
-```
-
-Expose the broker via Kong (example):
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: broker
-  namespace: ping-entra-dev
-  annotations:
-    kubernetes.io/ingress.class: kong
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  tls:
-    - hosts: [broker.dev.example.com]
-      secretName: broker-tls
-  rules:
-    - host: broker.dev.example.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: broker
-                port:
-                  number: 80
-```
-
-Apply the ingress per environment with your hostnames and namespaces:
-
-```bash
-kubectl apply -f ingress-broker-dev.yaml
-```
-
-Notes:
-- Update the ACME email, hostnames, and namespaces for each environment (dev/stage/prod).
-- Ensure the Kong proxy LoadBalancer address or DNS is reachable for HTTP-01 challenges.
+Terraform and provider versions are pinned in the stack files and dependency
+lock files. Do not manually edit generated CODEOWNERS entries or commit
+Terraform state, plans, credentials, or rendered secrets.
