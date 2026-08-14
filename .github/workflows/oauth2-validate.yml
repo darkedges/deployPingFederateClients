@@ -1,0 +1,68 @@
+name: oauth2-validate
+
+on:
+  pull_request:
+    paths:
+      - "oauth2/**"
+      - "terraform/**"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/oauth2-*.yml"
+  push:
+    branches: [develop, staging, production]
+    paths:
+      - "oauth2/**"
+      - "terraform/**"
+      - ".github/CODEOWNERS"
+      - ".github/workflows/oauth2-*.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oauth2-validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install pinned validation dependencies
+        run: python3 -m pip install --disable-pip-version-check -r oauth2/tools/requirements.txt yamllint==1.35.1
+      - name: Validate YAML and references
+        run: python3 oauth2/tools/oauth2_config.py validate
+      - name: Validator unit tests
+        run: python3 -m unittest discover -s oauth2/tests -v
+      - name: Verify generated ownership
+        run: python3 oauth2/tools/oauth2_config.py codeowners --check
+      - name: YAML lint
+        run: >-
+          yamllint -d '{extends: default, rules: {line-length: disable, document-start: disable}}' oauth2
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+      - name: Terraform formatting
+        run: terraform fmt -check -recursive terraform
+      - name: Terraform validation
+        run: |
+          terraform -chdir=terraform/stacks/platform init -backend=false
+          terraform -chdir=terraform/stacks/platform validate
+          terraform -chdir=terraform/stacks/application init -backend=false
+          terraform -chdir=terraform/stacks/application validate
+          terraform -chdir=terraform/stacks/application-destroy init -backend=false
+          terraform -chdir=terraform/stacks/application-destroy validate
+      - name: Mocked Terraform plan tests
+        run: |
+          terraform -chdir=terraform/stacks/platform test
+          terraform -chdir=terraform/stacks/application test
+      - name: Reject obvious credential material
+        shell: bash
+        run: |
+          if grep -RInE '(clientSecret|client_secret|password|private[_-]?key):[[:space:]]+[^[:space:]$]' oauth2/applications oauth2/platform; then
+            echo "Inline credential-like values are forbidden" >&2
+            exit 1
+          fi

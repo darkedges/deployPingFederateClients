@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
+  - package-ecosystem: terraform
+    directory: /terraform/stacks/application
+    schedule:
+      interval: weekly
+  - package-ecosystem: terraform
+    directory: /terraform/stacks/platform
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /broker
+    schedule:
+      interval: weekly

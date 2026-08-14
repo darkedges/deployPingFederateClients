@@ -1,0 +1,46 @@
+name: oauth2-import
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [development, staging, production]
+      config_file:
+        description: Canonical oauth2/applications YAML path
+        required: true
+        type: string
+      import_id:
+        description: Existing PingFederate OAuth client ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  import:
+    environment: ${{ inputs.environment }}
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    env:
+      TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}
+      TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
+      AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
+      VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[inputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[inputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Constrain import path
+        env:
+          CONFIG_FILE: ${{ inputs.config_file }}
+        run: |
+          [[ "$CONFIG_FILE" =~ ^oauth2/applications/oauth2_[a-z0-9-]+_[a-z0-9-]+\.yaml$ ]]
+          test -f "$CONFIG_FILE"
+      - run: bash oauth2/tools/terraform_ci.sh import "${{ inputs.environment }}" "${{ inputs.config_file }}" "${{ inputs.import_id }}"

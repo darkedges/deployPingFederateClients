@@ -1,0 +1,61 @@
+name: oauth2-scaffold
+
+on:
+  workflow_dispatch:
+    inputs:
+      organisation:
+        description: Lowercase organisation slug
+        required: true
+        type: string
+      application:
+        description: Lowercase application slug
+        required: true
+        type: string
+      display_name:
+        description: PingFederate display name
+        required: true
+        type: string
+      profile:
+        description: Approved OAuth2 profile
+        required: true
+        type: choice
+        options: [confidential_web, public_spa, native, service, device, token_exchange]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: develop
+      - name: Install parser
+        run: python3 -m pip install --disable-pip-version-check -r oauth2/tools/requirements.txt
+      - name: Generate disabled client definition
+        env:
+          ORGANISATION: ${{ inputs.organisation }}
+          APPLICATION: ${{ inputs.application }}
+          DISPLAY_NAME: ${{ inputs.display_name }}
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          python3 oauth2/tools/oauth2_config.py scaffold +            --organisation "$ORGANISATION" +            --application "$APPLICATION" +            --profile "$PROFILE" +            --name "$DISPLAY_NAME"
+          python3 oauth2/tools/oauth2_config.py codeowners
+      - name: Open draft pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ORGANISATION: ${{ inputs.organisation }}
+          APPLICATION: ${{ inputs.application }}
+        run: |
+          branch="scaffold/oauth2-${ORGANISATION}-${APPLICATION}-${GITHUB_RUN_ID}"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git switch -c "$branch"
+          git add oauth2/applications .github/CODEOWNERS
+          git commit -m "Scaffold OAuth2 client ${ORGANISATION}/${APPLICATION}"
+          git push origin "$branch"
+          gh pr create --draft --base develop --head "$branch" +            --title "OAuth2 client: ${ORGANISATION}/${APPLICATION}" +            --body "Generated in a disabled state. Complete all environment values and obtain application-owner plus identity-platform approval."

@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=../schemas/oauth2-client.schema.json
+apiVersion: pingfederate.oauth2/v1alpha1
+kind: OAuth2Client
+metadata:
+  organisation: example
+  application: example-app
+lifecycle:
+  state: disabled
+spec:
+  name: Example application
+  description: Non-deployable example showing the supported application contract.
+  profile: public_spa
+  accessTokenManager: default-reference
+  oidcPolicy: default-oidc
+  scopes:
+    - openid
+    - profile
+  authentication:
+    method: none
+  environments:
+    development:
+      redirectUris:
+        - https://example-app.dev.example.com/callback
+    staging:
+      redirectUris:
+        - https://example-app.staging.example.com/callback
+    production:
+      redirectUris:
+        - https://example-app.example.com/callback

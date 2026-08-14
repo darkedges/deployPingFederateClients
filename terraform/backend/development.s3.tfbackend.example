@@ -1,0 +1,5 @@
+bucket         = "replace-pingfederate-terraform-state"
+region         = "ap-southeast-2"
+kms_key_id     = "replace-with-kms-key-arn"
+use_lockfile   = true
+encrypt        = true

@@ -1,0 +1,45 @@
+# Node / package managers
+node_modules/
+__pycache__/
+*.py[cod]
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+npm-packages-offline-cache/
+
+# Build outputs
+*.log
+coverage/
+dist/
+build/
+.tmp/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Env and secrets
+.env
+.env.*
+.envrc
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Docker / local state
+*.pid
+*.seed
+*.swp
+
+# Kustomize / Helm
+*.tgz
+
+# Misc
+*.orig
+cloudflared/

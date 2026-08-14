@@ -1,0 +1,55 @@
+name: oauth2-rotate
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [development, staging, production]
+      config_file:
+        description: Client whose Vault value was externally rotated
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    env:
+      TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}
+      TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
+      AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
+      VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[inputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[inputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.environment == 'development' && 'develop' || inputs.environment }}
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh plan "${{ inputs.environment }}" "${{ inputs.config_file }}"
+  apply:
+    needs: plan
+    environment: ${{ inputs.environment }}
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    env:
+      TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}
+      TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
+      AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
+      VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[inputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[inputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.environment == 'development' && 'develop' || inputs.environment }}
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh apply "${{ inputs.environment }}" "${{ inputs.config_file }}"

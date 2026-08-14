@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://darkedges.au/schemas/pingfederate/oauth2-client-v1alpha1.json",
+  "title": "PingFederate OAuth2 client",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "lifecycle", "spec"],
+  "properties": {
+    "apiVersion": { "const": "pingfederate.oauth2/v1alpha1" },
+    "kind": { "const": "OAuth2Client" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["organisation", "application"],
+      "properties": {
+        "organisation": { "$ref": "#/$defs/organisationSlug" },
+        "application": { "$ref": "#/$defs/applicationSlug" }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": { "enum": ["active", "disabled"] }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "profile", "accessTokenManager", "scopes"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 255 },
+        "description": { "type": "string", "maxLength": 1024 },
+        "profile": {
+          "enum": ["confidential_web", "public_spa", "native", "service", "device", "token_exchange"]
+        },
+        "clientId": { "type": "string", "pattern": "^[A-Za-z0-9._~-]{1,255}$" },
+        "accessTokenManager": { "$ref": "#/$defs/catalogKey" },
+        "oidcPolicy": { "$ref": "#/$defs/catalogKey" },
+        "tokenExchangePolicy": { "$ref": "#/$defs/catalogKey" },
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[A-Za-z0-9._:/-]+$" }
+        },
+        "authentication": { "$ref": "#/$defs/authentication" },
+        "redirectUris": { "$ref": "#/$defs/uris" },
+        "logoutUris": { "$ref": "#/$defs/uris" },
+        "postLogoutRedirectUris": { "$ref": "#/$defs/uris" },
+        "audiences": { "$ref": "#/$defs/uris" },
+        "environments": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["development", "staging", "production"],
+          "properties": {
+            "development": { "$ref": "#/$defs/environmentOverlay" },
+            "staging": { "$ref": "#/$defs/environmentOverlay" },
+            "production": { "$ref": "#/$defs/environmentOverlay" }
+          }
+        },
+        "advanced": { "$ref": "#/$defs/advanced" },
+        "adoption": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["importId"],
+          "properties": {
+            "importId": { "type": "string", "minLength": 1 },
+            "pending": { "type": "boolean", "default": true }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "organisationSlug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" },
+    "applicationSlug": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,47}$" },
+    "catalogKey": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+    "uris": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 2048 }
+    },
+    "authentication": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method"],
+          "properties": { "method": { "const": "none" } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "secretRef"],
+          "properties": {
+            "method": { "const": "client_secret" },
+            "secretRef": { "const": "client_secret" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["method", "jwksUrl"],
+          "properties": {
+            "method": { "const": "private_key_jwt" },
+            "jwksUrl": { "type": "string", "format": "uri", "pattern": "^https://" }
+          }
+        }
+      ]
+    },
+    "environmentOverlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "redirectUris": { "$ref": "#/$defs/uris" },
+        "logoutUris": { "$ref": "#/$defs/uris" },
+        "postLogoutRedirectUris": { "$ref": "#/$defs/uris" },
+        "audiences": { "$ref": "#/$defs/uris" }
+      }
+    },
+    "advanced": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "refreshRolling": { "enum": ["ROLL", "DONT_ROLL", "SERVER_DEFAULT"] },
+        "clientSecretRetentionMinutes": { "type": "integer", "minimum": 0, "maximum": 10080 },
+        "persistentGrantLifetimeDays": { "type": "integer", "minimum": 1, "maximum": 365 },
+        "restrictedResponseTypes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["CODE", "ID_TOKEN", "TOKEN", "CODE_ID_TOKEN"] }
+        },
+        "requestObjectSigningAlgorithm": {
+          "enum": ["RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512"]
+        }
+      }
+    }
+  }
+}

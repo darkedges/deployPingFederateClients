@@ -1,0 +1,59 @@
+name: oauth2-drift
+
+on:
+  schedule:
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: oauth2-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        environment: [development, staging, production]
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 60
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}
+      TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
+      AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
+      VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[matrix.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[matrix.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[matrix.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ matrix.environment == 'development' && 'develop' || matrix.environment }}
+          persist-credentials: false
+      - name: Plan platform drift
+        run: bash oauth2/tools/terraform_ci.sh plan "${{ matrix.environment }}" platform
+      - name: Plan application drift
+        shell: bash
+        run: |
+          failed=0
+          for file in oauth2/applications/*.yaml; do
+            bash oauth2/tools/terraform_ci.sh plan "${{ matrix.environment }}" "$file" || failed=1
+          done
+          exit "$failed"
+      - name: Open drift issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="PingFederate drift: ${{ matrix.environment }}"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          body="A scheduled Terraform plan detected drift or failed. Review run ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}. No changes were applied."
+          if [ -n "$existing" ]; then gh issue comment "$existing" --body "$body"; else gh issue create --title "$title" --body "$body"; fi

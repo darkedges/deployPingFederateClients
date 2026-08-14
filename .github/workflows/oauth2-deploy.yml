@@ -1,0 +1,123 @@
+name: oauth2-deploy
+
+on:
+  push:
+    branches: [develop, staging, production]
+    paths:
+      - "oauth2/**"
+      - "terraform/**"
+      - ".github/workflows/oauth2-*.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: oauth2-deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  TF_STATE_BUCKET: ${{ vars.OAUTH2_TF_STATE_BUCKET }}
+  TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
+  AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
+  VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.environment.outputs.value }}
+      applications: ${{ steps.applications.outputs.value }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+      - name: Install pinned parser
+        run: python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+      - id: environment
+        shell: bash
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            develop) value=development ;;
+            staging) value=staging ;;
+            production) value=production ;;
+            *) exit 2 ;;
+          esac
+          echo "value=$value" >> "$GITHUB_OUTPUT"
+      - id: applications
+        env:
+          BASE: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+        run: echo "value=$(python3 oauth2/tools/changed.py "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+
+  plan-platform:
+    needs: discover
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    env:
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[needs.discover.outputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh plan "${{ needs.discover.outputs.environment }}" platform
+
+  apply-platform:
+    needs: [discover, plan-platform]
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    environment: ${{ needs.discover.outputs.environment }}
+    env:
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[needs.discover.outputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh apply "${{ needs.discover.outputs.environment }}" platform
+
+  plan-applications:
+    needs: [discover, apply-platform]
+    if: needs.discover.outputs.applications != '[]'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.applications) }}
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    env:
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[needs.discover.outputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh plan "${{ needs.discover.outputs.environment }}" "${{ matrix.target }}"
+
+  apply-applications:
+    needs: [discover, plan-applications]
+    if: needs.plan-applications.result == 'success'
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.applications) }}
+    runs-on: [self-hosted, linux, pingfederate]
+    timeout-minutes: 30
+    environment: ${{ needs.discover.outputs.environment }}
+    env:
+      AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[needs.discover.outputs.environment] }}
+      VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
+      PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - run: bash oauth2/tools/terraform_ci.sh apply "${{ needs.discover.outputs.environment }}" "${{ matrix.target }}"

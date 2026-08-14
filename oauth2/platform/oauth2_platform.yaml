@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=../schemas/oauth2-platform.schema.json
+apiVersion: pingfederate.oauth2/v1alpha1
+kind: OAuth2PlatformCatalog
+spec:
+  approvedScopes:
+    - openid
+    - profile
+    - email
+  externalReferences:
+    tokenProcessors: {}
+    tokenGenerators: {}
+    dataSources: {}
+  accessTokenManagers:
+    - key: default-reference
+      managerId: defaultReferenceATM
+      name: Default reference access token manager
+      profile: reference
+      attributeContract:
+        - name: subject
+          multiValued: false
+      configuration:
+        fields:
+          - name: Token Length
+            value: "56"
+          - name: Token Lifetime
+            value: "120"
+  accessTokenMappings: []
+  oidcPolicies:
+    - key: default-oidc
+      policyId: defaultOIDC
+      name: Default OIDC policy
+      accessTokenManager: default-reference
+      attributeContract: []
+      attributeContractFulfillment:
+        sub:
+          source:
+            type: TOKEN
+          value: Username
+      scopeAttributeMappings: {}
+      idTokenLifetimeMinutes: 5
+  tokenExchangePolicies: []
+  tokenExchangeGeneratorMappings: []

@@ -1,0 +1,20 @@
+name: oauth2-promotion-check
+
+on:
+  pull_request:
+    branches: [staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce promotion order
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          if [ "$BASE" = staging ]; then test "$HEAD" = develop; fi
+          if [ "$BASE" = production ]; then test "$HEAD" = staging; fi
