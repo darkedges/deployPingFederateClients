@@ -1,0 +1,29 @@
+runnerScaleSetName: arc-runner-set
+
+template:
+  spec:
+    containers:
+      - name: runner
+        image: darkedges/pingfeddeploy-arc-runner:test
+        imagePullPolicy: IfNotPresent
+        command:
+          - /home/runner/run.sh
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: "2"
+            memory: 4Gi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1001
+          runAsGroup: 1001
+          capabilities:
+            drop:
+              - ALL
+
+# Configure when the image is stored in a private registry.
+# imagePullSecrets:
+#   - name: runner-registry

@@ -57,6 +57,7 @@ jobs:
           AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[steps.overlay.outputs.environment] }}
           VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[steps.overlay.outputs.environment] }}
           PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[steps.overlay.outputs.environment] }}
+          PF_INSECURE_TRUST_ALL_TLS: ${{ vars.OAUTH2_PF_INSECURE_TRUST_ALL_TLS }}
           TARGETS: ${{ steps.overlay.outputs.targets }}
           PLATFORM_CHANGED: ${{ steps.overlay.outputs.platform_changed }}
           ENVIRONMENT: ${{ steps.overlay.outputs.environment }}

@@ -9,6 +9,9 @@ pingfederate_hosts = {
   production  = "pingfederate.internal.example.com"
 }
 
+# Temporary escape hatch for self-signed certificates. Keep false in production.
+pingfederate_insecure_trust_all_tls = false
+
 # Set this when the AWS account already has the GitHub Actions OIDC provider.
 # github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
 

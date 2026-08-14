@@ -33,6 +33,7 @@ jobs:
       AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[inputs.environment] }}
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[inputs.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
+      PF_INSECURE_TRUST_ALL_TLS: ${{ vars.OAUTH2_PF_INSECURE_TRUST_ALL_TLS }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

@@ -35,6 +35,7 @@ platform catalog rather than created by application configuration.
 | `terraform/stacks/` | Independently stateful Terraform roots |
 | `.github/workflows/` | Validation and deployment automation |
 | `setup/` | AWS and Vault bootstrap Terraform |
+| `setup/arc-runner/` | ARC runner image and Helm values example |
 
 ## Quick start
 
@@ -149,6 +150,7 @@ Required repository variables:
 | `OAUTH2_VAULT_ADDR` | Internal Vault HTTPS address |
 | `OAUTH2_VAULT_ROLES` | JSON environment-to-Vault-role mapping |
 | `OAUTH2_PF_HOSTS` | JSON environment-to-PingFederate-host mapping |
+| `OAUTH2_PF_INSECURE_TRUST_ALL_TLS` | Temporary TLS certificate verification bypass |
 | `OAUTH2_REVIEW_APP_ID` | Least-privilege GitHub App ID |
 
 Required repository secret:

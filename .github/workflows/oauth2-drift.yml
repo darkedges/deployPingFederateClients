@@ -33,6 +33,7 @@ jobs:
       AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[matrix.environment] }}
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[matrix.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[matrix.environment] }}
+      PF_INSECURE_TRUST_ALL_TLS: ${{ vars.OAUTH2_PF_INSECURE_TRUST_ALL_TLS }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

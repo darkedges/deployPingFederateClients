@@ -30,6 +30,12 @@ variable "pingfederate_hosts" {
   }
 }
 
+variable "pingfederate_insecure_trust_all_tls" {
+  type        = bool
+  description = "Trust any PingFederate TLS certificate. Insecure; use only until the runner trusts the internal CA."
+  default     = false
+}
+
 variable "github_oidc_provider_arn" {
   type        = string
   description = "Existing GitHub Actions IAM OIDC provider ARN; leave null to create it."
