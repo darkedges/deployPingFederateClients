@@ -6,3 +6,4 @@
 /terraform/ @darkedges/identity-platform
 /setup/ @darkedges/identity-platform
 /.github/workflows/oauth2-*.yml @darkedges/identity-platform
+/oauth2/applications/oauth2_darkedges_test-client.yaml @darkedges/identity-platform @darkedges/identity-platform

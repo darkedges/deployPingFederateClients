@@ -117,7 +117,8 @@ platform references. OAuth profiles constrain grants and authentication:
 
 - Browser and native clients require PKCE.
 - Implicit and resource-owner-password grants cannot be configured.
-- Confidential client secrets are read from Vault.
+- Confidential client secrets are generated once by trusted deployments and
+  subsequently read from Vault; ordinary deployment cannot overwrite them.
 - PingFederate root and intermediate CA certificates are retrieved from Vault
   PKI and trusted explicitly for each deployment job.
 - Pull requests require approvals from the application owner and a different

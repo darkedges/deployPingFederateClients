@@ -47,6 +47,11 @@ def load_yaml(path: Path):
         return yaml.load(handle, Loader=UniqueKeyLoader)
 
 
+def write_text_lf(path: Path, content: str) -> None:
+    with path.open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write(content)
+
+
 def schema_errors(document, schema_path: Path) -> list[str]:
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     validator = Draft202012Validator(schema, format_checker=FormatChecker())
@@ -288,10 +293,10 @@ def scaffold(organisation: str, application: str, profile: str, name: str) -> Pa
         "lifecycle": {"state": "disabled"},
         "spec": spec,
     }
-    path.write_text(
+    write_text_lf(
+        path,
         "# yaml-language-server: $schema=../schemas/oauth2-client.schema.json\n"
         + yaml.safe_dump(document, sort_keys=False),
-        encoding="utf-8",
     )
     return path
 
@@ -327,7 +332,7 @@ def main() -> int:
                 print("ERROR: .github/CODEOWNERS is stale", file=sys.stderr)
                 return 1
         else:
-            path.write_text(expected, encoding="utf-8")
+            write_text_lf(path, expected)
         return 0
     if args.command == "render":
         print(json.dumps(render_application(args.file.resolve(), args.environment), indent=2, sort_keys=True))

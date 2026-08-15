@@ -10,8 +10,8 @@ the shared catalog and ownership registry.
 1. Add the application team to `ownership.yaml`. This identity-owned change
    must land before an application can be scaffolded.
 2. Run `oauth2-scaffold`, or copy the disabled example in `applications/`.
-3. Complete all environment overlays. For confidential clients, provision
-   `kv/oauth2/<environment>/<organisation>/<application>#client_secret`.
+3. Complete all environment overlays. For a new confidential client, the
+   trusted branch deployment creates its `client_secret` in Vault exactly once.
 4. Run `python oauth2/tools/oauth2_config.py validate` and regenerate
    CODEOWNERS with the same tool.
 5. Open a pull request to `develop`. A current-commit application-owner
@@ -21,6 +21,10 @@ Profiles derive the permitted grants. Implicit and resource-owner-password
 grants cannot be expressed. Browser/native clients require PKCE. Inline
 secrets, unknown properties, insecure redirects, and wildcard redirects fail
 validation.
+
+Create-once client-secret bootstrap uses KV-v2 CAS `0`. Deployments reuse an
+existing value and cannot overwrite or delete it. PR plans, drift, import, and
+rotation workflows never bootstrap missing secrets.
 
 To retire a client, first merge `lifecycle.state: disabled`. A successful
 apply writes an S3 retirement marker. Removal cannot produce a destruction

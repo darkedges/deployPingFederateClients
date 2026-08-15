@@ -1,2 +1,4 @@
 identityPlatformTeam: darkedges/identity-platform
-applications: {}
+applications:
+  darkedges/test-client:
+    githubTeam: darkedges/identity-platform

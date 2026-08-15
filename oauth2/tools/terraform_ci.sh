@@ -45,6 +45,62 @@ print(f"{label} OIDC claims: " + json.dumps(visible_claims, separators=(",", ":"
 PY
 }
 
+read_or_create_client_secret() {
+  local secret_path="$1"
+  CLIENT_SECRET_PATH="$secret_path" python3 - <<'PY'
+import json
+import os
+import secrets
+import ssl
+import sys
+import urllib.error
+import urllib.request
+
+url = f"{os.environ['VAULT_ADDR'].rstrip('/')}/v1/kv/data/{os.environ['CLIENT_SECRET_PATH']}"
+context = ssl.create_default_context(cafile=os.environ["VAULT_CACERT"])
+headers = {"X-Vault-Token": os.environ["VAULT_TOKEN"]}
+
+def request(method, payload=None):
+    body = None if payload is None else json.dumps(payload).encode("utf-8")
+    request_headers = headers | ({"Content-Type": "application/json"} if body else {})
+    req = urllib.request.Request(url, data=body, headers=request_headers, method=method)
+    with urllib.request.urlopen(req, context=context, timeout=30) as response:
+        return json.load(response)
+
+def read_secret():
+    try:
+        response = request("GET")
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return None
+        raise
+    value = response.get("data", {}).get("data", {}).get("client_secret")
+    if not isinstance(value, str) or not value:
+        raise RuntimeError("Vault entry exists but does not contain a non-empty client_secret")
+    return value
+
+client_secret = read_secret()
+if client_secret is None:
+    if os.environ.get("ALLOW_SECRET_BOOTSTRAP", "false").lower() != "true":
+        raise RuntimeError(
+            "client_secret is absent; create-once bootstrap is allowed only in the trusted deployment workflow"
+        )
+    candidate = secrets.token_urlsafe(48)
+    try:
+        request("POST", {"options": {"cas": 0}, "data": {"client_secret": candidate}})
+        client_secret = candidate
+        print(f"Created client_secret at kv/data/{os.environ['CLIENT_SECRET_PATH']}", file=sys.stderr)
+    except urllib.error.HTTPError:
+        # A concurrent deployment may have won the CAS=0 create. Read its value;
+        # any unrelated failure is re-raised when no value now exists.
+        client_secret = read_secret()
+        if client_secret is None:
+            raise
+
+print(client_secret)
+PY
+}
+
 [[ -n "${VAULT_CA_PEM:-}" ]] || { echo "VAULT_CA_PEM is required to verify Vault TLS" >&2; exit 2; }
 vault_ca_file="$(mktemp)"
 printf '%s\n' "$VAULT_CA_PEM" >"$vault_ca_file"
@@ -127,7 +183,7 @@ else
   state_key="pingfederate/${environment}/applications/${organisation}/${application}.tfstate"
   if [[ "$(jq -er .spec.authentication.method <<<"$rendered")" == "client_secret" ]]; then
     export TF_VAR_client_secret
-    TF_VAR_client_secret="$(vault read -format=json "kv/data/oauth2/${environment}/${organisation}/${application}" | jq -er .data.data.client_secret)"
+    TF_VAR_client_secret="$(read_or_create_client_secret "oauth2/${environment}/${organisation}/${application}")"
   fi
   terraform_args=(
     -var="environment=$environment"
