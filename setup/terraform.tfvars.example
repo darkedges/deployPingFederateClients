@@ -15,6 +15,10 @@ pingfederate_insecure_trust_all_tls = false
 # Set this when the AWS account already has the GitHub Actions OIDC provider.
 # github_oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
 
+# Repositories using GitHub immutable OIDC subjects must set the prefix returned
+# by: gh api repos/OWNER/REPOSITORY/actions/oidc/customization/sub
+# github_oidc_subject_prefix = "repo:your-org@123456/pingfeddeploy@789012"
+
 # Set true only when the jwt auth path does not already exist in Vault.
 manage_vault_jwt_backend = false
 

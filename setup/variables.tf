@@ -50,6 +50,20 @@ variable "github_oidc_provider_arn" {
   }
 }
 
+variable "github_oidc_subject_prefix" {
+  type        = string
+  description = "Optional GitHub OIDC sub prefix. Set this to the repository's sub_claim_prefix when GitHub uses immutable owner and repository IDs."
+  default     = null
+
+  validation {
+    condition = (
+      var.github_oidc_subject_prefix == null ||
+      can(regex("^repo:[A-Za-z0-9_.-]+(?:@[0-9]+)?/[A-Za-z0-9_.-]+(?:@[0-9]+)?$", var.github_oidc_subject_prefix))
+    )
+    error_message = "github_oidc_subject_prefix must use repo:owner/repository or repo:owner@owner-id/repository@repository-id format."
+  }
+}
+
 variable "vault_address" {
   type        = string
   description = "HTTPS address of an initialized and unsealed Vault cluster."

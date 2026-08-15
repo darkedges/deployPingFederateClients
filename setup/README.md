@@ -22,6 +22,7 @@ terraform -chdir=setup init
 terraform -chdir=setup plan -var-file=/secure/path/setup.tfvars
 terraform -chdir=setup apply -var-file=/secure/path/setup.tfvars
 terraform -chdir=setup output -json github_repository_variables
+terraform -chdir=setup output -json github_oidc_trust
 ```
 
 Initially use local state or a separately secured bootstrap backend. After the

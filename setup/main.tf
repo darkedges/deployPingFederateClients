@@ -6,6 +6,10 @@ locals {
   }
   tags                   = merge({ Service = "pingfederate-oauth2", ManagedBy = "Terraform" }, var.tags)
   github_repository_name = split("/", var.github_repository)[1]
+  github_oidc_subject_prefix = coalesce(
+    var.github_oidc_subject_prefix,
+    "repo:${var.github_repository}",
+  )
 }
 
 data "aws_caller_identity" "current" {}
@@ -106,7 +110,7 @@ resource "aws_iam_role" "github" {
       Effect = "Allow", Principal = { Federated = local.github_provider_arn }, Action = "sts:AssumeRoleWithWebIdentity",
       Condition = { StringEquals = {
         "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        "token.actions.githubusercontent.com:sub" = ["repo:${var.github_repository}:ref:refs/heads/${each.value}", "repo:${var.github_repository}:environment:${each.key}"]
+        "token.actions.githubusercontent.com:sub" = ["${local.github_oidc_subject_prefix}:ref:refs/heads/${each.value}", "${local.github_oidc_subject_prefix}:environment:${each.key}"]
       } }
     }]
   })

@@ -30,7 +30,7 @@ jobs:
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
       PF_INSECURE_TRUST_ALL_TLS: ${{ vars.OAUTH2_PF_INSECURE_TRUST_ALL_TLS }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.environment == 'development' && 'develop' || inputs.environment }}
           persist-credentials: false
@@ -50,7 +50,7 @@ jobs:
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[inputs.environment] }}
       PF_INSECURE_TRUST_ALL_TLS: ${{ vars.OAUTH2_PF_INSECURE_TRUST_ALL_TLS }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ inputs.environment == 'development' && 'develop' || inputs.environment }}
           persist-credentials: false

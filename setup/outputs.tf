@@ -14,8 +14,8 @@ output "github_oidc_trust" {
     for environment, branch in local.environments : environment => {
       audience = "sts.amazonaws.com"
       subjects = [
-        "repo:${var.github_repository}:ref:refs/heads/${branch}",
-        "repo:${var.github_repository}:environment:${environment}",
+        "${local.github_oidc_subject_prefix}:ref:refs/heads/${branch}",
+        "${local.github_oidc_subject_prefix}:environment:${environment}",
       ]
     }
   }

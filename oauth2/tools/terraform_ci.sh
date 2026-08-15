@@ -23,6 +23,17 @@ oidc_token() {
 }
 
 aws_oidc="$(oidc_token sts.amazonaws.com)"
+AWS_OIDC_TOKEN="$aws_oidc" python3 - <<'PY'
+import base64
+import json
+import os
+
+payload = os.environ["AWS_OIDC_TOKEN"].split(".")[1]
+payload += "=" * (-len(payload) % 4)
+claims = json.loads(base64.urlsafe_b64decode(payload))
+visible = {key: claims.get(key) for key in ("aud", "sub", "repository", "ref")}
+print("AWS OIDC claims: " + json.dumps(visible, separators=(",", ":")))
+PY
 credentials="$(aws sts assume-role-with-web-identity \
   --role-arn "$AWS_ROLE_ARN" \
   --role-session-name "oauth2-${GITHUB_RUN_ID}" \
