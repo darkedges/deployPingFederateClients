@@ -15,6 +15,12 @@ class OAuth2ConfigurationTests(unittest.TestCase):
     def test_repository_configuration_is_valid(self):
         self.assertEqual([], oauth2_config.validate_all())
 
+    def test_oidc_subject_must_reference_manager_token_contract(self):
+        platform = oauth2_config.load_yaml(oauth2_config.PLATFORM_FILE)
+        platform["spec"]["oidcPolicies"][0]["attributeContractFulfillment"]["sub"]["value"] = "Username"
+        errors, _ = oauth2_config.validate_platform(platform)
+        self.assertTrue(any("maps sub from unknown token attribute 'Username'" in error for error in errors))
+
     def test_non_deployable_example_matches_schema(self):
         example = oauth2_config.load_yaml(
             oauth2_config.ROOT / "oauth2" / "examples" / "oauth2_example_example-app.yaml"

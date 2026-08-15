@@ -16,7 +16,7 @@ spec:
       name: Default reference access token manager
       profile: reference
       attributeContract:
-        - name: subject
+        - name: sub
           multiValued: false
       configuration:
         fields:
@@ -35,7 +35,7 @@ spec:
         sub:
           source:
             type: TOKEN
-          value: Username
+          value: sub
       scopeAttributeMappings: {}
       idTokenLifetimeMinutes: 5
   tokenExchangePolicies: []

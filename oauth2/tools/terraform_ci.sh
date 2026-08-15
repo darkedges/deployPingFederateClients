@@ -90,7 +90,13 @@ admin_path="pingfederate/${environment}/terraform-admin"
 export PINGFEDERATE_PROVIDER_USERNAME PINGFEDERATE_PROVIDER_PASSWORD
 PINGFEDERATE_PROVIDER_USERNAME="$(vault read -format=json "kv/data/$admin_path" | jq -er .data.data.username)"
 PINGFEDERATE_PROVIDER_PASSWORD="$(vault read -format=json "kv/data/$admin_path" | jq -er .data.data.password)"
-export PINGFEDERATE_PROVIDER_HTTPS_HOST="$PF_HTTPS_HOST"
+case "$PF_HTTPS_HOST" in
+  https://*) pingfederate_https_host="$PF_HTTPS_HOST" ;;
+  http://*) echo "PF_HTTPS_HOST must use HTTPS" >&2; exit 2 ;;
+  *://*) echo "PF_HTTPS_HOST uses an unsupported URI scheme" >&2; exit 2 ;;
+  *) pingfederate_https_host="https://${PF_HTTPS_HOST}" ;;
+esac
+export PINGFEDERATE_PROVIDER_HTTPS_HOST="$pingfederate_https_host"
 export PINGFEDERATE_PROVIDER_INSECURE_TRUST_ALL_TLS="${PF_INSECURE_TRUST_ALL_TLS:-false}"
 export PINGFEDERATE_PROVIDER_PRODUCT_VERSION=12.3
 export PINGFEDERATE_TF_APPEND_USER_AGENT="GitHubActions/${GITHUB_RUN_ID}"

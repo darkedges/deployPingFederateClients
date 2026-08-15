@@ -88,8 +88,18 @@ def validate_platform(document: dict) -> tuple[list[str], dict[str, dict]]:
         if mapping["accessTokenManager"] not in catalog["accessTokenManagers"]:
             errors.append(f"platform: mapping {mapping['key']!r} references an unknown access token manager")
     for policy in spec["oidcPolicies"]:
-        if policy["accessTokenManager"] not in catalog["accessTokenManagers"]:
+        manager = catalog["accessTokenManagers"].get(policy["accessTokenManager"])
+        if manager is None:
             errors.append(f"platform: OIDC policy {policy['key']!r} references an unknown access token manager")
+            continue
+        subject_fulfillment = policy["attributeContractFulfillment"].get("sub")
+        if subject_fulfillment and subject_fulfillment["source"]["type"] == "TOKEN":
+            token_attributes = {attribute["name"] for attribute in manager["attributeContract"]}
+            if subject_fulfillment["value"] not in token_attributes:
+                errors.append(
+                    f"platform: OIDC policy {policy['key']!r} maps sub from unknown token attribute "
+                    f"{subject_fulfillment['value']!r} on access token manager {manager['key']!r}"
+                )
     for policy in spec["tokenExchangePolicies"]:
         for mapping in policy["processorMappings"]:
             if mapping["subjectTokenProcessor"] not in processors:
