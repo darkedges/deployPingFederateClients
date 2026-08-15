@@ -23,6 +23,7 @@ env:
   TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
   AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
   VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+  VAULT_CA_PEM: ${{ vars.OAUTH2_VAULT_CA_PEM }}
 
 jobs:
   discover:

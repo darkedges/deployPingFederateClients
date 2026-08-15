@@ -14,6 +14,14 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
+data "vault_generic_secret" "root_ca" {
+  path = "darkedges_idam_root/cert/ca"
+}
+
+data "vault_generic_secret" "intermediate_ca" {
+  path = "darkedges_idam_intermediate/cert/ca"
+}
+
 resource "aws_kms_key" "terraform" {
   description             = "PingFederate OAuth2 Terraform state and plans"
   enable_key_rotation     = true
@@ -184,12 +192,18 @@ resource "vault_kv_secret_v2" "pingfederate_admin" {
 }
 
 locals {
+  vault_ca_pem = nonsensitive(join("\n", [
+    data.vault_generic_secret.root_ca.data["certificate"],
+    data.vault_generic_secret.intermediate_ca.data["certificate"],
+  ]))
+
   github_actions_variables = {
     OAUTH2_AWS_REGION                = var.aws_region
     OAUTH2_TF_STATE_BUCKET           = aws_s3_bucket.terraform.id
     OAUTH2_TF_STATE_KMS_KEY_ID       = aws_kms_key.terraform.arn
     OAUTH2_AWS_ROLE_ARNS             = jsonencode({ for key, role in aws_iam_role.github : key => role.arn })
     OAUTH2_VAULT_ADDR                = var.vault_address
+    OAUTH2_VAULT_CA_PEM              = local.vault_ca_pem
     OAUTH2_VAULT_ROLES               = jsonencode({ for key, role in vault_jwt_auth_backend_role.github : key => role.role_name })
     OAUTH2_PF_HOSTS                  = jsonencode(var.pingfederate_hosts)
     OAUTH2_PF_INSECURE_TRUST_ALL_TLS = tostring(var.pingfederate_insecure_trust_all_tls)

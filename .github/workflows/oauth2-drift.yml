@@ -30,6 +30,7 @@ jobs:
       TF_STATE_KMS_KEY_ID: ${{ vars.OAUTH2_TF_STATE_KMS_KEY_ID }}
       AWS_REGION: ${{ vars.OAUTH2_AWS_REGION }}
       VAULT_ADDR: ${{ vars.OAUTH2_VAULT_ADDR }}
+      VAULT_CA_PEM: ${{ vars.OAUTH2_VAULT_CA_PEM }}
       AWS_ROLE_ARN: ${{ fromJSON(vars.OAUTH2_AWS_ROLE_ARNS)[matrix.environment] }}
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[matrix.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[matrix.environment] }}

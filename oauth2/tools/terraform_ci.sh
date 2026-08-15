@@ -22,6 +22,21 @@ oidc_token() {
     "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}" | jq -er .value
 }
 
+[[ -n "${VAULT_CA_PEM:-}" ]] || { echo "VAULT_CA_PEM is required to verify Vault TLS" >&2; exit 2; }
+vault_ca_file="$(mktemp)"
+printf '%s\n' "$VAULT_CA_PEM" >"$vault_ca_file"
+chmod 0600 "$vault_ca_file"
+export VAULT_CACERT="$vault_ca_file"
+
+cleanup() {
+  rm -f "${plan_file:-}" "${checksum_file:-}" "${vault_ca_file:-}" /tmp/platform-secrets.json /tmp/retirement.json
+  rm -rf "${pf_ca_dir:-}"
+  if [[ -n "${VAULT_TOKEN:-}" ]]; then
+    vault token revoke -self >/dev/null 2>&1 || true
+  fi
+}
+trap cleanup EXIT
+
 aws_oidc="$(oidc_token sts.amazonaws.com)"
 AWS_OIDC_TOKEN="$aws_oidc" python3 - <<'PY'
 import base64
@@ -50,12 +65,6 @@ vault_oidc="$(oidc_token vault)"
 export VAULT_TOKEN
 VAULT_TOKEN="$(vault write -field=token auth/jwt/login role="$VAULT_ROLE" jwt="$vault_oidc")"
 unset vault_oidc
-cleanup() {
-  rm -f "${plan_file:-}" "${checksum_file:-}" /tmp/platform-secrets.json /tmp/retirement.json
-  rm -rf "${pf_ca_dir:-}"
-  vault token revoke -self >/dev/null 2>&1 || true
-}
-trap cleanup EXIT
 
 pf_ca_dir="$(mktemp -d)"
 vault read -field=certificate darkedges_idam_root/cert/ca >"$pf_ca_dir/root.pem"
