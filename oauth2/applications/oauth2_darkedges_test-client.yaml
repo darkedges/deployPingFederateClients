@@ -14,19 +14,19 @@ spec:
   accessTokenManager: default-reference
   oidcPolicy: default-oidc
   scopes:
-  - openid
-  - profile
-  - email
+    - openid
+    - profile
+    - email
   authentication:
     method: client_secret
     secretRef: client_secret
   environments:
     development:
       redirectUris:
-      - https://localhost/callback
+        - https://localhost/callback
     staging:
       redirectUris:
-      - https://localhost/callback
+        - https://localhost/callback
     production:
       redirectUris:
-      - https://localhost/callback
+        - https://localhost/callback

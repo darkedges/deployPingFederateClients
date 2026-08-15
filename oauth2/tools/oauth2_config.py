@@ -29,6 +29,13 @@ class UniqueKeyLoader(yaml.SafeLoader):
     pass
 
 
+class IndentedSafeDumper(yaml.SafeDumper):
+    """Indent sequence items beneath their mapping key for yamllint."""
+
+    def increase_indent(self, flow=False, indentless=False):
+        return super().increase_indent(flow, False)
+
+
 def _construct_mapping(loader, node, deep=False):
     mapping = {}
     for key_node, value_node in node.value:
@@ -296,7 +303,7 @@ def scaffold(organisation: str, application: str, profile: str, name: str) -> Pa
     write_text_lf(
         path,
         "# yaml-language-server: $schema=../schemas/oauth2-client.schema.json\n"
-        + yaml.safe_dump(document, sort_keys=False),
+        + yaml.dump(document, Dumper=IndentedSafeDumper, sort_keys=False),
     )
     return path
 

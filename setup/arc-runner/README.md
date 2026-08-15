@@ -7,7 +7,7 @@ by the PingFederate workflows:
 - Terraform
 - Vault CLI
 - Python 3 and a dedicated virtual environment containing the repository's
-  pinned PyYAML and JSON Schema dependencies
+  pinned PyYAML, JSON Schema, and yamllint dependencies
 - GitHub CLI
 - Bash, Git, curl, jq, OpenSSH, CA certificates, unzip, and checksum utilities
 - DarkEdges IDAM root and intermediate CAs installed in the system trust store
@@ -46,6 +46,7 @@ docker build \
   --build-arg TERRAFORM_VERSION=1.15.8 \
   --build-arg VAULT_VERSION=2.0.3 \
   --build-arg AWSCLI_VERSION=2.31.22 \
+  --build-arg YAMLLINT_VERSION=1.35.1 \
   --tag darkedges/pingfeddeploy-arc-runner:test \
   .
 ```

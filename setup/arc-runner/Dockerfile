@@ -4,6 +4,7 @@ FROM ghcr.io/actions/actions-runner:latest
 ARG TERRAFORM_VERSION=1.15.8
 ARG VAULT_VERSION=2.0.3
 ARG AWSCLI_VERSION=2.31.22
+ARG YAMLLINT_VERSION=1.35.1
 
 USER root
 
@@ -43,6 +44,7 @@ COPY oauth2/tools/requirements.txt /tmp/pingfeddeploy-requirements.txt
 RUN python3 -m venv /opt/pingfeddeploy-python \
     && /opt/pingfeddeploy-python/bin/python -m pip install --disable-pip-version-check --no-cache-dir \
       --requirement /tmp/pingfeddeploy-requirements.txt \
+      "yamllint==${YAMLLINT_VERSION}" \
     && rm -f /tmp/pingfeddeploy-requirements.txt
 
 ENV PATH="/opt/pingfeddeploy-python/bin:${PATH}"
@@ -80,6 +82,7 @@ RUN terraform version \
     && python3 --version \
     && python3 -m pip --version \
     && python3 -c "import jsonschema, yaml" \
+    && yamllint --version \
     && gh --version \
     && jq --version \
     && git --version \

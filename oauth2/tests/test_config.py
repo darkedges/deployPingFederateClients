@@ -35,6 +35,14 @@ class OAuth2ConfigurationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate YAML key"):
             yaml.load(io.StringIO("key: one\nkey: two\n"), Loader=oauth2_config.UniqueKeyLoader)
 
+    def test_generated_yaml_indents_sequence_items(self):
+        rendered = yaml.dump(
+            {"spec": {"scopes": ["openid"]}},
+            Dumper=oauth2_config.IndentedSafeDumper,
+            sort_keys=False,
+        )
+        self.assertIn("  scopes:\n    - openid\n", rendered)
+
     def test_https_redirect_is_accepted(self):
         self.assertIsNone(oauth2_config.unsafe_uri("https://app.example.com/callback", "public_spa"))
 
