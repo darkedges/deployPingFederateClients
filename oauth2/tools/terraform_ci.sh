@@ -22,6 +22,29 @@ oidc_token() {
     "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}" | jq -er .value
 }
 
+describe_oidc() {
+  local label="$1"
+  local token="$2"
+  OIDC_LABEL="$label" OIDC_TOKEN="$token" python3 - <<'PY'
+import base64
+import json
+import os
+
+def decode(segment):
+    segment += "=" * (-len(segment) % 4)
+    return json.loads(base64.urlsafe_b64decode(segment))
+
+header_segment, payload_segment, _ = os.environ["OIDC_TOKEN"].split(".")
+header = decode(header_segment)
+claims = decode(payload_segment)
+visible_header = {key: header.get(key) for key in ("alg", "kid")}
+visible_claims = {key: claims.get(key) for key in ("iss", "aud", "sub", "repository", "ref")}
+label = os.environ["OIDC_LABEL"]
+print(f"{label} OIDC header: " + json.dumps(visible_header, separators=(",", ":")))
+print(f"{label} OIDC claims: " + json.dumps(visible_claims, separators=(",", ":")))
+PY
+}
+
 [[ -n "${VAULT_CA_PEM:-}" ]] || { echo "VAULT_CA_PEM is required to verify Vault TLS" >&2; exit 2; }
 vault_ca_file="$(mktemp)"
 printf '%s\n' "$VAULT_CA_PEM" >"$vault_ca_file"
@@ -38,17 +61,7 @@ cleanup() {
 trap cleanup EXIT
 
 aws_oidc="$(oidc_token sts.amazonaws.com)"
-AWS_OIDC_TOKEN="$aws_oidc" python3 - <<'PY'
-import base64
-import json
-import os
-
-payload = os.environ["AWS_OIDC_TOKEN"].split(".")[1]
-payload += "=" * (-len(payload) % 4)
-claims = json.loads(base64.urlsafe_b64decode(payload))
-visible = {key: claims.get(key) for key in ("aud", "sub", "repository", "ref")}
-print("AWS OIDC claims: " + json.dumps(visible, separators=(",", ":")))
-PY
+describe_oidc AWS "$aws_oidc"
 credentials="$(aws sts assume-role-with-web-identity \
   --role-arn "$AWS_ROLE_ARN" \
   --role-session-name "oauth2-${GITHUB_RUN_ID}" \
@@ -62,6 +75,7 @@ AWS_SESSION_TOKEN="$(jq -er .SessionToken <<<"$credentials")"
 unset credentials aws_oidc
 
 vault_oidc="$(oidc_token vault)"
+describe_oidc Vault "$vault_oidc"
 export VAULT_TOKEN
 VAULT_TOKEN="$(vault write -field=token auth/jwt/login role="$VAULT_ROLE" jwt="$vault_oidc")"
 unset vault_oidc

@@ -25,6 +25,19 @@ RUN apt-get update \
       unzip \
     && rm -rf /var/lib/apt/lists/*
 
+# BuildKit secrets are required so a runner image cannot be published without
+# the private PKI trust chain. The certificates are public, but secret mounts
+# keep temporary host paths and build inputs out of the image metadata.
+RUN --mount=type=secret,id=darkedges_idam_root_ca,required=true \
+    --mount=type=secret,id=darkedges_idam_intermediate_ca,required=true \
+    install -m 0644 /run/secrets/darkedges_idam_root_ca \
+      /usr/local/share/ca-certificates/darkedges-idam-root.crt \
+    && install -m 0644 /run/secrets/darkedges_idam_intermediate_ca \
+      /usr/local/share/ca-certificates/darkedges-idam-intermediate.crt \
+    && update-ca-certificates \
+    && test -s /usr/local/share/ca-certificates/darkedges-idam-root.crt \
+    && test -s /usr/local/share/ca-certificates/darkedges-idam-intermediate.crt
+
 COPY oauth2/tools/requirements.txt /tmp/pingfeddeploy-requirements.txt
 
 RUN python3 -m venv /opt/pingfeddeploy-python \
@@ -69,7 +82,9 @@ RUN terraform version \
     && python3 -c "import jsonschema, yaml" \
     && gh --version \
     && jq --version \
-    && git --version
+    && git --version \
+    && test -L /etc/ssl/certs/darkedges-idam-root.pem \
+    && test -L /etc/ssl/certs/darkedges-idam-intermediate.pem
 
 USER runner
 
