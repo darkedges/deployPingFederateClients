@@ -49,8 +49,11 @@ resource "pingfederate_oauth_client" "this" {
     policy_group = {
       id = local.oidc_policy_ids[local.spec.oidcPolicy]
     }
-    logout_uris               = try(local.spec.logoutUris, [])
-    post_logout_redirect_uris = try(local.spec.postLogoutRedirectUris, [])
+    # PingFederate omits empty logout collections and the provider reads them
+    # back as null. Sending an empty set causes an inconsistent result after
+    # apply, so normalize both absent and explicitly empty values to null.
+    logout_uris               = length(try(local.spec.logoutUris, [])) == 0 ? null : local.spec.logoutUris
+    post_logout_redirect_uris = length(try(local.spec.postLogoutRedirectUris, [])) == 0 ? null : local.spec.postLogoutRedirectUris
   }
   token_exchange_processor_policy_ref = try(local.spec.tokenExchangePolicy, null) == null ? null : {
     id = local.exchange_policy_ids[local.spec.tokenExchangePolicy]
