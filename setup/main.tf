@@ -10,6 +10,9 @@ locals {
     var.github_oidc_subject_prefix,
     "repo:${var.github_repository}",
   )
+  pingfederate_https_hosts = {
+    for environment, host in var.pingfederate_hosts : environment => "https://${host}"
+  }
 }
 
 data "aws_caller_identity" "current" {}
@@ -205,7 +208,7 @@ locals {
     OAUTH2_VAULT_ADDR                = var.vault_address
     OAUTH2_VAULT_CA_PEM              = local.vault_ca_pem
     OAUTH2_VAULT_ROLES               = jsonencode({ for key, role in vault_jwt_auth_backend_role.github : key => role.role_name })
-    OAUTH2_PF_HOSTS                  = jsonencode(var.pingfederate_hosts)
+    OAUTH2_PF_HOSTS                  = jsonencode(local.pingfederate_https_hosts)
     OAUTH2_PF_INSECURE_TRUST_ALL_TLS = tostring(var.pingfederate_insecure_trust_all_tls)
   }
 }

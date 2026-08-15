@@ -25,6 +25,10 @@ terraform -chdir=setup output -json github_repository_variables
 terraform -chdir=setup output -json github_oidc_trust
 ```
 
+`pingfederate_hosts` accepts hostnames (and optional ports). Setup publishes
+`OAUTH2_PF_HOSTS` with an explicit `https://` scheme because the PingFederate
+provider's `https_host` setting requires a complete URI.
+
 Initially use local state or a separately secured bootstrap backend. After the
 bucket exists, migrate this root to a protected remote backend if desired.
 

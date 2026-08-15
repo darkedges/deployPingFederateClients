@@ -20,7 +20,7 @@ variable "github_repository" {
 
 variable "pingfederate_hosts" {
   type        = map(string)
-  description = "PingFederate Admin API hostname for each deployment environment, without a URL scheme."
+  description = "PingFederate Admin API hostname for each deployment environment, without a URL scheme. Setup publishes these as HTTPS URIs for the provider."
   validation {
     condition = (
       toset(keys(var.pingfederate_hosts)) == toset(["development", "staging", "production"]) &&
