@@ -36,6 +36,7 @@ platform catalog rather than created by application configuration.
 | `terraform/modules/` | PingFederate application and platform modules |
 | `terraform/stacks/` | Independently stateful Terraform roots |
 | `.github/workflows/` | Validation and deployment automation |
+| `docs/` | Architecture, workflow, tool, and operations documentation |
 | `setup/` | AWS and Vault bootstrap Terraform |
 | `setup/arc-runner/` | ARC runner image and Helm values example |
 
@@ -82,7 +83,8 @@ python oauth2/tools/oauth2_config.py codeowners
 
 Commit both the application file and generated `.github/CODEOWNERS` change.
 
-See [`oauth2/examples/oauth2_example_example-app.yaml`](oauth2/examples/oauth2_example_example-app.yaml)
+See [`docs/README.md`](docs/README.md) for the architecture and automation
+reference, [`oauth2/examples/oauth2_example_example-app.yaml`](oauth2/examples/oauth2_example_example-app.yaml)
 for a complete non-deployable example and [`oauth2/README.md`](oauth2/README.md)
 for the detailed author and operator guide.
 
@@ -91,9 +93,8 @@ for the detailed author and operator guide.
 ```mermaid
 flowchart LR
   A[Application YAML] --> V[Schema and security validation]
-  V --> R[Application owner approval]
-  R --> I[Identity platform approval]
-  I --> P[Terraform plan]
+  V --> R[Required current-commit team approval]
+  R --> P[Terraform plan]
   P --> G[GitHub environment gate]
   G --> F[PingFederate apply]
 ```
@@ -123,8 +124,9 @@ platform references. OAuth profiles constrain grants and authentication:
   subsequently read from Vault; ordinary deployment cannot overwrite them.
 - PingFederate root and intermediate CA certificates are retrieved from Vault
   PKI and trusted explicitly for each deployment job.
-- Pull requests require approvals from the application owner and a different
-  identity-platform team member at the current commit.
+- Pull requests require a current-commit, non-author platform approval. One
+  approval is sufficient when application and identity ownership use the same
+  team; distinct teams require distinct approvers.
 - GitHub Actions dependencies are pinned to commit SHAs.
 - AWS and Vault authentication use GitHub OIDC rather than stored cloud
   credentials.

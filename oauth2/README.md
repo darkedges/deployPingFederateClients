@@ -14,8 +14,9 @@ the shared catalog and ownership registry.
    trusted branch deployment creates its `client_secret` in Vault exactly once.
 4. Run `python oauth2/tools/oauth2_config.py validate` and regenerate
    CODEOWNERS with the same tool.
-5. Open a pull request to `develop`. A current-commit application-owner
-   approval and a different identity-platform approver are required.
+5. Open a pull request to `develop`. A current-commit approval from a
+   non-author platform owner is required. When application and identity
+   ownership use distinct teams, distinct approvers are required.
 
 Profiles derive the permitted grants. Implicit and resource-owner-password
 grants cannot be expressed. Browser/native clients require PKCE. Inline
