@@ -8,7 +8,7 @@ lifecycle:
   state: active
 spec:
   name: DarkEdges promotion demo
-  description: Confidential OAuth2/OIDC client used to demonstrate promotion through development, staging, and production.
+  description: Confidential OAuth2 / OIDC client used to demonstrate promotion through development, staging, and production.
   profile: confidential_web
   clientId: darkedges-promotion-demo
   accessTokenManager: default-reference
