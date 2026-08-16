@@ -11,6 +11,8 @@ the configuration through protected environments.
 ## What this repository manages
 
 - OAuth2 clients and environment-specific redirect URIs
+- Single-instance promotion using automatic `dev-`, `stg-`, and `prod-`
+  client-ID prefixes
 - Access token managers and access token mappings
 - OpenID Connect policies
 - Token exchange processor policies and generator mappings

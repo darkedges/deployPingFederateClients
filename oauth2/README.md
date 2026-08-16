@@ -22,6 +22,14 @@ grants cannot be expressed. Browser/native clients require PKCE. Inline
 secrets, unknown properties, insecure redirects, and wildcard redirects fail
 validation.
 
+For a single PingFederate instance, deployment automatically prefixes client
+IDs with `dev-`, `stg-`, or `prod-`. Display names receive the corresponding
+`DEV -`, `STG -`, or `PROD -` prefix. Keep `clientId` in YAML environment
+neutral; the same definition can then progress through every environment
+without client-ID collisions. The shared platform catalog is applied from
+`develop` only; staging and production reuse those same access-token managers
+and policies on the instance.
+
 Create-once client-secret bootstrap uses KV-v2 CAS `0`. Deployments reuse an
 existing value and cannot overwrite or delete it. PR plans, drift, import, and
 rotation workflows never bootstrap missing secrets.

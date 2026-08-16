@@ -54,6 +54,7 @@ jobs:
 
   plan-platform:
     needs: discover
+    if: needs.discover.outputs.environment == 'development'
     runs-on: arc-runner-set
     timeout-minutes: 30
     env:
@@ -85,7 +86,11 @@ jobs:
 
   plan-applications:
     needs: [discover, apply-platform]
-    if: needs.discover.outputs.applications != '[]'
+    if: >-
+      always() &&
+      needs.discover.result == 'success' &&
+      (needs.apply-platform.result == 'success' || needs.apply-platform.result == 'skipped') &&
+      needs.discover.outputs.applications != '[]'
     strategy:
       fail-fast: false
       max-parallel: 4
