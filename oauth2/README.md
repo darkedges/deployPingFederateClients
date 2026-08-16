@@ -35,6 +35,9 @@ that client's isolated Terraform state. Platform-only changes run only the
 development platform stack, while application-module changes reconcile every
 client because the shared resource definition changed. Validation, schema,
 documentation, and workflow-only changes do not run infrastructure jobs.
+Every branch deployment calls the reusable validation workflow first. Change
+discovery, cloud authentication, planning, and applying remain blocked unless
+all YAML, ownership, security, unit, and Terraform checks succeed.
 
 Create-once client-secret bootstrap uses KV-v2 CAS `0`. Deployments reuse an
 existing value and cannot overwrite or delete it. PR plans, drift, import, and

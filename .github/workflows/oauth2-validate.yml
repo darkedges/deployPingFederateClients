@@ -1,6 +1,7 @@
 name: oauth2-validate
 
 on:
+  workflow_call:
   pull_request:
     paths:
       - "oauth2/**"
@@ -8,15 +9,6 @@ on:
       - "setup/**"
       - ".github/CODEOWNERS"
       - ".github/workflows/oauth2-*.yml"
-  push:
-    branches: [develop, staging, production]
-    paths:
-      - "oauth2/**"
-      - "terraform/**"
-      - "setup/**"
-      - ".github/CODEOWNERS"
-      - ".github/workflows/oauth2-*.yml"
-
 permissions:
   contents: read
 
