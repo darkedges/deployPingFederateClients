@@ -31,7 +31,8 @@ jobs:
     runs-on: arc-runner-set
     outputs:
       environment: ${{ steps.environment.outputs.value }}
-      applications: ${{ steps.applications.outputs.value }}
+      applications: ${{ steps.changes.outputs.applications }}
+      platform_changed: ${{ steps.changes.outputs.platform_changed }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -46,15 +47,21 @@ jobs:
             *) exit 2 ;;
           esac
           echo "value=$value" >> "$GITHUB_OUTPUT"
-      - id: applications
+      - id: changes
+        shell: bash
         env:
           BASE: ${{ github.event.before }}
           HEAD: ${{ github.sha }}
-        run: echo "value=$(python3 oauth2/tools/changed.py "$BASE" "$HEAD")" >> "$GITHUB_OUTPUT"
+        run: |
+          result="$(python3 oauth2/tools/changed.py "$BASE" "$HEAD")"
+          echo "applications=$(jq -c '.applications' <<<"$result")" >> "$GITHUB_OUTPUT"
+          echo "platform_changed=$(jq -r '.platform_changed' <<<"$result")" >> "$GITHUB_OUTPUT"
 
   plan-platform:
     needs: discover
-    if: needs.discover.outputs.environment == 'development'
+    if: >-
+      needs.discover.outputs.environment == 'development' &&
+      needs.discover.outputs.platform_changed == 'true'
     runs-on: arc-runner-set
     timeout-minutes: 30
     env:

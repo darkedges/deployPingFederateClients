@@ -30,6 +30,12 @@ without client-ID collisions. The shared platform catalog is applied from
 `develop` only; staging and production reuse those same access-token managers
 and policies on the instance.
 
+Push deployments are impact-based. A client YAML change plans and applies only
+that client's isolated Terraform state. Platform-only changes run only the
+development platform stack, while application-module changes reconcile every
+client because the shared resource definition changed. Validation, schema,
+documentation, and workflow-only changes do not run infrastructure jobs.
+
 Create-once client-secret bootstrap uses KV-v2 CAS `0`. Deployments reuse an
 existing value and cannot overwrite or delete it. PR plans, drift, import, and
 rotation workflows never bootstrap missing secrets.
