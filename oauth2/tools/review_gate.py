@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -25,8 +26,16 @@ def api(path: str):
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
-    with urllib.request.urlopen(request, timeout=30) as response:
-        return json.load(response)
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.load(response)
+    except urllib.error.HTTPError as error:
+        if error.code == 404 and "/teams/" in path:
+            raise SystemExit(
+                "GitHub App cannot read the configured team. Verify the team slug, "
+                "installation access, and organization Members: read permission."
+            ) from None
+        raise SystemExit(f"GitHub API request failed for {path}: HTTP {error.code}") from None
 
 
 def team_members(team: str) -> set[str]:
