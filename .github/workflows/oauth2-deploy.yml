@@ -122,7 +122,10 @@ jobs:
 
   apply-applications:
     needs: [discover, plan-applications]
-    if: needs.plan-applications.result == 'success'
+    if: >-
+      always() &&
+      needs.discover.result == 'success' &&
+      needs.plan-applications.result == 'success'
     strategy:
       fail-fast: false
       max-parallel: 2
