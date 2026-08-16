@@ -27,7 +27,11 @@ env:
   ALLOW_SECRET_BOOTSTRAP: "true"
 
 jobs:
+  validate:
+    uses: ./.github/workflows/oauth2-validate.yml
+
   discover:
+    needs: validate
     runs-on: arc-runner-set
     outputs:
       environment: ${{ steps.environment.outputs.value }}
