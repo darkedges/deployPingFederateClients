@@ -31,7 +31,7 @@ jobs:
       environment: ${{ steps.environment.outputs.value }}
       applications: ${{ steps.applications.outputs.value }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 2
       - name: Install pinned parser
@@ -61,7 +61,7 @@ jobs:
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: bash oauth2/tools/terraform_ci.sh plan "${{ needs.discover.outputs.environment }}" platform
@@ -76,7 +76,7 @@ jobs:
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: bash oauth2/tools/terraform_ci.sh apply "${{ needs.discover.outputs.environment }}" platform
@@ -96,7 +96,7 @@ jobs:
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: bash oauth2/tools/terraform_ci.sh plan "${{ needs.discover.outputs.environment }}" "${{ matrix.target }}"
@@ -117,7 +117,7 @@ jobs:
       VAULT_ROLE: ${{ fromJSON(vars.OAUTH2_VAULT_ROLES)[needs.discover.outputs.environment] }}
       PF_HTTPS_HOST: ${{ fromJSON(vars.OAUTH2_PF_HOSTS)[needs.discover.outputs.environment] }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
       - run: bash oauth2/tools/terraform_ci.sh apply "${{ needs.discover.outputs.environment }}" "${{ matrix.target }}"
