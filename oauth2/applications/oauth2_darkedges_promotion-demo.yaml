@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=../schemas/oauth2-client.schema.json
+apiVersion: pingfederate.oauth2/v1alpha1
+kind: OAuth2Client
+metadata:
+  organisation: darkedges
+  application: promotion-demo
+lifecycle:
+  state: active
+spec:
+  name: DarkEdges promotion demo
+  description: Confidential OAuth2/OIDC client used to demonstrate promotion through development, staging, and production.
+  profile: confidential_web
+  clientId: darkedges-promotion-demo
+  accessTokenManager: default-reference
+  oidcPolicy: default-oidc
+  scopes:
+    - openid
+    - profile
+    - email
+  authentication:
+    method: client_secret
+    secretRef: client_secret
+  environments:
+    development:
+      redirectUris:
+        - https://localhost/promotion-demo/callback
+    staging:
+      redirectUris:
+        - https://localhost/promotion-demo/callback
+    production:
+      redirectUris:
+        - https://localhost/promotion-demo/callback
