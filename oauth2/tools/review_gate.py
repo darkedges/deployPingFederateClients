@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require current-commit approval from both application and identity teams."""
+"""Require current-commit approval from application and identity owners."""
 
 from __future__ import annotations
 
@@ -50,6 +50,27 @@ def team_members(team: str) -> set[str]:
         page += 1
 
 
+def approval_error(
+    approved: set[str],
+    identity_team: str,
+    identity_members: set[str],
+    app_teams: dict[str, set[str]],
+) -> str | None:
+    """Return the approval-policy failure, allowing one shared-team approval."""
+    identity_approvers = approved & identity_members
+    if not identity_approvers:
+        return "A current-commit identity-platform approval is required"
+    for team, members in app_teams.items():
+        app_approvers = approved & members
+        if not app_approvers:
+            return f"A current-commit approval from {team} is required"
+        if team.lower() != identity_team.lower() and not any(
+            app != identity for app in app_approvers for identity in identity_approvers
+        ):
+            return f"{team} and identity-platform approvals must come from different people"
+    return None
+
+
 def main() -> int:
     repository = os.environ["GITHUB_REPOSITORY"]
     number = os.environ["PR_NUMBER"]
@@ -61,10 +82,13 @@ def main() -> int:
         print("The pull request author is not a trusted member", file=sys.stderr)
         return 1
     reviews = api(f"/repos/{repository}/pulls/{number}/reviews?per_page=100")
+    author = pull["user"]["login"].lower()
     approved = {
         review["user"]["login"].lower()
         for review in reviews
-        if review["state"] == "APPROVED" and review.get("commit_id") == pull["head"]["sha"]
+        if review["state"] == "APPROVED"
+        and review.get("commit_id") == pull["head"]["sha"]
+        and review["user"]["login"].lower() != author
     }
     ownership = yaml.safe_load((ROOT / "oauth2" / "ownership.yaml").read_text(encoding="utf-8"))
     required_app_teams = set()
@@ -82,18 +106,16 @@ def main() -> int:
         if len(files) < 100:
             break
         page += 1
-    identity_approvers = approved & team_members(ownership["identityPlatformTeam"])
-    if not identity_approvers:
-        print("A current-commit identity-platform approval is required", file=sys.stderr)
+    identity_team = ownership["identityPlatformTeam"]
+    error = approval_error(
+        approved,
+        identity_team,
+        team_members(identity_team),
+        {team: team_members(team) for team in required_app_teams},
+    )
+    if error:
+        print(error, file=sys.stderr)
         return 1
-    for team in required_app_teams:
-        app_approvers = approved & team_members(team)
-        if not app_approvers:
-            print(f"A current-commit approval from {team} is required", file=sys.stderr)
-            return 1
-        if not any(app != identity for app in app_approvers for identity in identity_approvers):
-            print(f"{team} and identity-platform approvals must come from different people", file=sys.stderr)
-            return 1
     print("Required team approvals are present")
     return 0
 
