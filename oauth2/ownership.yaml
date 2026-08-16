@@ -1,6 +1,6 @@
-identityPlatformTeam: darkedges/identity-platform
+identityPlatformTeam: DarkEdgesAU/identity-platform
 applications:
   darkedges/promotion-demo:
-    githubTeam: darkedges/identity-platform
+    githubTeam: DarkEdgesAU/identity-platform
   darkedges/test-client:
-    githubTeam: darkedges/identity-platform
+    githubTeam: DarkEdgesAU/identity-platform
